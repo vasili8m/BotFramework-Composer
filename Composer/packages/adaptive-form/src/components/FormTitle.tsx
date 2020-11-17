@@ -53,6 +53,7 @@ const FormTitle: React.FC<FormTitleProps> = (props) => {
   const { description, schema, formData, uiOptions = {} } = props;
   const { shellApi, ...shellData } = useShellApi();
   const { currentRecognizer: selectedRecognizer } = useRecognizerConfig();
+  const { telemetryLogger } = shellApi;
   // use a ref because the syncIntentName is debounced and we need the most current version to invoke the api
   const shell = useRef({
     data: shellData,
@@ -153,9 +154,12 @@ const FormTitle: React.FC<FormTitleProps> = (props) => {
               <br />
               <Link
                 aria-label={formatMessage('Learn more about {title}', { title: getHelpLinkLabel() })}
-                href={uiOptions?.helpLink}
+                href={uiOptions.helpLink}
                 rel="noopener noreferrer"
                 target="_blank"
+                onClick={() => {
+                  telemetryLogger?.log('HelpLinkClicked', { url: uiOptions.helpLink! });
+                }}
               >
                 {formatMessage('Learn more')}
               </Link>

@@ -50,6 +50,7 @@ import { undoFunctionState, undoVersionState } from '../../recoilModel/undo/hist
 import { decodeDesignerPathToArrayPath } from '../../utils/convertUtils/designerPathEncoder';
 import { useTriggerApi } from '../../shell/triggerApi';
 import { undoStatusSelectorFamily } from '../../recoilModel/selectors/undo';
+import { useEventLogger } from '../../telemetry/hooks';
 
 import { WarningMessage } from './WarningMessage';
 import {
@@ -131,6 +132,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
   const undoFunction = useRecoilValue(undoFunctionState(skillId ?? projectId));
   const undoVersion = useRecoilValue(undoVersionState(skillId ?? projectId));
   const rootProjectId = useRecoilValue(rootBotProjectIdSelector) ?? projectId;
+  const eventLogger = useEventLogger();
 
   const { undo, redo, commitChanges, clearUndo } = undoFunction;
   const [canUndo, canRedo] = useRecoilValue(undoStatusSelectorFamily(projectId));
@@ -153,6 +155,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
     createQnAFromUrlDialogBegin,
     addSkill,
     updateZoomRate,
+    setCurrentPageMode,
   } = useRecoilValue(dispatcherState);
 
   const params = new URLSearchParams(location?.search);
@@ -386,6 +389,10 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
     return { actionSelected, showDisableBtn, showEnableBtn };
   }, [visualEditorSelection, currentDialog?.content]);
 
+  useEffect(() => {
+    setCurrentPageMode('design');
+  }, []);
+
   const { onFocusFlowEditor, onBlurFlowEditor } = useElectronFeatures(actionSelected, canUndo, canRedo);
   const EditorAPI = getEditorAPI();
 
@@ -396,6 +403,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
         key: 'adddialog',
         text: formatMessage('Add new dialog'),
         onClick: () => {
+          eventLogger.log('NewDialogAdded');
           createDialogBegin([], onCreateDialogComplete, projectId);
         },
       },
@@ -406,6 +414,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
           displayName: currentDialog?.displayName ?? '',
         }),
         onClick: () => {
+          eventLogger.log('NewTriggerStarted');
           openNewTriggerModal();
         },
       },
@@ -454,19 +463,26 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             key: 'edit.undo',
             text: formatMessage('Undo'),
             disabled: !canUndo,
-            onClick: undo,
+            onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'undo' });
+              undo();
+            },
           },
           {
             key: 'edit.redo',
             text: formatMessage('Redo'),
             disabled: !canRedo,
-            onClick: redo,
+            onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'redo' });
+              redo();
+            },
           },
           {
             key: 'edit.cut',
             text: formatMessage('Cut'),
             disabled: !actionSelected,
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'cut' });
               EditorAPI.Actions.CutSelection();
             },
           },
@@ -475,6 +491,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             text: formatMessage('Copy'),
             disabled: !actionSelected,
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'copy' });
               EditorAPI.Actions.CopySelection();
             },
           },
@@ -483,6 +500,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             text: formatMessage('Move'),
             disabled: !actionSelected,
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'move' });
               EditorAPI.Actions.MoveSelection();
             },
           },
@@ -491,6 +509,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             text: formatMessage('Delete'),
             disabled: !actionSelected,
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'delete' });
               EditorAPI.Actions.DeleteSelection();
             },
           },
@@ -512,6 +531,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             text: formatMessage('Disable'),
             disabled: !showDisableBtn,
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'disable' });
               EditorAPI.Actions.DisableSelection();
             },
           },
@@ -520,6 +540,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             text: formatMessage('Enable'),
             disabled: !showEnableBtn,
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'enable' });
               EditorAPI.Actions.EnableSelection();
             },
           },
@@ -532,6 +553,9 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
       align: 'left',
       buttonProps: {
         iconProps: { iconName: 'OpenInNewWindow' },
+        onClick: () => {
+          eventLogger.log('ToolbarButtonClicked', { name: 'export' });
+        },
       },
       menuProps: {
         items: [
@@ -539,6 +563,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             key: 'zipexport',
             text: formatMessage('Export assets to .zip'),
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'exportToZip' });
               exportToZip(projectId);
             },
           },
@@ -546,6 +571,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
             key: 'exportAsSkill',
             text: formatMessage('Export as skill'),
             onClick: () => {
+              eventLogger.log('ToolbarButtonClicked', { name: 'exportAsSkill' });
               setExportSkillModalVisible(true);
             },
           },

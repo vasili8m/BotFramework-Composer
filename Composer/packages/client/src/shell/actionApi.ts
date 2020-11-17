@@ -15,12 +15,15 @@ import {
 } from '@bfc/shared';
 import { LuIntentSection, MicrosoftIDialog } from '@botframework-composer/types';
 
+import { useEventLogger } from '../telemetry/hooks';
+
 import { useLgApi } from './lgApi';
 import { useLuApi } from './luApi';
 
 export const useActionApi = (projectId: string) => {
   const { getLgTemplates, removeLgTemplates, addLgTemplate } = useLgApi(projectId);
   const { addLuIntent, getLuIntent, removeLuIntent } = useLuApi(projectId);
+  const eventLogger = useEventLogger();
 
   const luFieldName = '_lu';
 
@@ -84,6 +87,8 @@ export const useActionApi = (projectId: string) => {
   };
 
   async function constructActions(dialogId: string, actions: MicrosoftIDialog[]) {
+    actions.forEach(({ $kind }) => eventLogger.log('ActionAdded', { type: $kind }));
+
     // '- hi' -> 'SendActivity_1234'
     const referenceLgText: FieldProcessorAsync<string> = async (fromId, fromAction, toId, toAction, lgFieldName) =>
       createLgTemplate(dialogId, fromAction[lgFieldName] as string, toId, toAction, lgFieldName);
@@ -116,6 +121,7 @@ export const useActionApi = (projectId: string) => {
   }
 
   async function constructAction(dialogId: string, action: MicrosoftIDialog) {
+    eventLogger.log('ActionAdded', { type: action.$kind });
     const [newAction] = await constructActions(dialogId, [action]);
     return newAction;
   }
@@ -126,6 +132,7 @@ export const useActionApi = (projectId: string) => {
   }
 
   async function deleteAction(dialogId: string, action: MicrosoftIDialog) {
+    eventLogger.log('ActionDeleted', { type: action.$kind });
     return destructAction(
       action,
       (templates: string[]) => removeLgTemplates(dialogId, templates),
@@ -134,6 +141,8 @@ export const useActionApi = (projectId: string) => {
   }
 
   async function deleteActions(dialogId: string, actions: MicrosoftIDialog[]) {
+    actions.forEach(({ $kind }) => eventLogger.log('ActionDeleted', { type: $kind }));
+
     return destructActions(
       actions,
       (templates: string[]) => removeLgTemplates(dialogId, templates),

@@ -16,6 +16,8 @@ import { FeatureFlagController } from '../controllers/featureFlags';
 import { AuthController } from '../controllers/auth';
 import { csrfProtection } from '../middleware/csrfProtection';
 import { ImportController } from '../controllers/import';
+import { SettingsController } from '../controllers/settings';
+import { TelemetryController } from '../controllers/telemetry';
 
 import { UtilitiesController } from './../controllers/utilities';
 
@@ -101,6 +103,13 @@ router.post('/featureFlags', FeatureFlagController.updateFeatureFlags);
 // importing
 router.post('/import/:source', ImportController.startImport);
 router.post('/import/:source/authenticate', ImportController.authenticate);
+// Telemetry
+router.post('/telemetry/trackEvent', TelemetryController.trackEvent);
+router.post('/telemetry/pageView', TelemetryController.pageView);
+
+// User Server Settings
+router.get('/settings', SettingsController.getUserSettings);
+router.post('/settings', SettingsController.updateUserSettings);
 
 const errorHandler = (handler: RequestHandler) => (req: Request, res: Response, next: NextFunction) => {
   Promise.resolve(handler(req, res, next)).catch(next);

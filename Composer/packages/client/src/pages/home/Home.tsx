@@ -3,7 +3,7 @@
 
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import formatMessage from 'format-message';
 import { Link } from 'office-ui-fabric-react/lib/Link';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
@@ -15,6 +15,7 @@ import { CreationFlowStatus } from '../../constants';
 import { dispatcherState, botDisplayNameState, filteredTemplatesSelector } from '../../recoilModel';
 import { recentProjectsState, templateIdState, currentProjectIdState } from '../../recoilModel/atoms/appState';
 import { Toolbar, IToolbarItem } from '../../components/Toolbar';
+import { useEventLogger } from '../../telemetry/hooks';
 
 import * as home from './styles';
 import { ItemContainer } from './ItemContainer';
@@ -60,10 +61,19 @@ const Home: React.FC<RouteComponentProps> = () => {
   const botName = useRecoilValue(botDisplayNameState(projectId));
   const recentProjects = useRecoilValue(recentProjectsState);
   const templateId = useRecoilValue(templateIdState);
-  const { openProject, setCreationFlowStatus, onboardingAddCoachMarkRef, saveTemplateId } = useRecoilValue(
-    dispatcherState
-  );
+  const {
+    openProject,
+    setCreationFlowStatus,
+    onboardingAddCoachMarkRef,
+    saveTemplateId,
+    setCurrentPageMode,
+  } = useRecoilValue(dispatcherState);
   const filteredTemplates = useRecoilValue(filteredTemplatesSelector);
+  const eventLogger = useEventLogger();
+
+  useEffect(() => {
+    setCurrentPageMode('home');
+  }, []);
 
   const onItemChosen = async (item) => {
     if (item && item.path) {
@@ -90,6 +100,7 @@ const Home: React.FC<RouteComponentProps> = () => {
           iconName: 'CirclePlus',
         },
         onClick: () => {
+          eventLogger.log('ToolbarButtonClicked', { name: 'newBot' });
           setCreationFlowStatus(CreationFlowStatus.NEW);
           navigate(`projects/create`);
         },
@@ -106,6 +117,7 @@ const Home: React.FC<RouteComponentProps> = () => {
           iconName: 'OpenFolderHorizontal',
         },
         onClick: () => {
+          eventLogger.log('ToolbarButtonClicked', { name: 'openBot' });
           setCreationFlowStatus(CreationFlowStatus.OPEN);
           navigate(`projects/open`);
         },
@@ -122,6 +134,7 @@ const Home: React.FC<RouteComponentProps> = () => {
           iconName: 'Save',
         },
         onClick: () => {
+          eventLogger.log('ToolbarButtonClicked', { name: 'saveAs' });
           setCreationFlowStatus(CreationFlowStatus.SAVEAS);
           navigate(`projects/${projectId}/${templateId}/save`);
         },

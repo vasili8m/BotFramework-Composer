@@ -6,6 +6,7 @@ import type { DialogInfo, LuFile, LgFile, QnAFile, LuIntentSection, LgTemplate, 
 import type { ILUFeaturesConfig, SkillSetting, UserSettings } from './settings';
 import type { JSONSchema7 } from './schema';
 import { MicrosoftIDialog } from './sdk';
+import { TelemetryEventLogger } from './telemetry';
 
 /** Recursively marks all properties as optional. */
 type AllPartial<T> = {
@@ -42,6 +43,7 @@ export type BotSchemas = {
 };
 
 export type ApplicationContextApi = {
+  telemetryLogger: TelemetryEventLogger;
   navTo: (path: string, rest?: any) => void;
   updateUserSettings: (settings: AllPartial<UserSettings>) => void;
   announce: (message: string) => void;

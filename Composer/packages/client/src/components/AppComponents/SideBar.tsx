@@ -13,6 +13,7 @@ import { TooltipHost, DirectionalHint } from 'office-ui-fabric-react/lib/Tooltip
 import { resolveToBasePath } from '../../utils/fileUtil';
 import { BASEPATH } from '../../constants';
 import { NavItem } from '../NavItem';
+import { useEventLogger } from '../../telemetry/hooks';
 
 import { useLinks } from './../../utils/hooks';
 
@@ -65,6 +66,7 @@ const divider = (isExpand: boolean) => css`
 export const SideBar = () => {
   const [sideBarExpand, setSideBarExpand] = useState(false);
   const { topLinks, bottomLinks } = useLinks();
+  const eventLogger = useEventLogger();
 
   const mapNavItemTo = (relPath: string) => resolveToBasePath(BASEPATH, relPath);
   const globalNavButtonText = sideBarExpand ? formatMessage('Collapse Navigation') : formatMessage('Expand Navigation');
@@ -81,6 +83,7 @@ export const SideBar = () => {
               iconName: 'GlobalNavButton',
             }}
             onClick={() => {
+              eventLogger.log(!sideBarExpand ? 'LeftMenuExpanded' : 'LeftMenuCollapsed');
               setSideBarExpand((current) => !current);
             }}
           />

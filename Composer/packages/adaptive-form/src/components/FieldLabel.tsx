@@ -2,12 +2,15 @@
 // Licensed under the MIT License.
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
-import React from 'react';
+import React, { useRef } from 'react';
 import { DirectionalHint, TooltipHost, TooltipDelay } from 'office-ui-fabric-react/lib/Tooltip';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import { Label } from 'office-ui-fabric-react/lib/Label';
 import { NeutralColors } from '@uifabric/fluent-theme';
 import formatMessage from 'format-message';
+import { useShellApi } from '@bfc/extension-client';
+
+import { useAdaptiveFormContext } from '../AdaptiveFormContext';
 
 import { Link } from './Link';
 import { focusBorder } from './sharedStyles';
@@ -21,6 +24,10 @@ interface DescriptionCalloutProps {
 
 const DescriptionCallout: React.FC<DescriptionCalloutProps> = function DescriptionCallout(props) {
   const { description, title, helpLink } = props;
+  const { baseSchema } = useAdaptiveFormContext();
+  const { shellApi } = useShellApi();
+  const { telemetryLogger } = shellApi;
+  const telemetryTimeoutRef = useRef<any>();
 
   if (!description) {
     return null;
@@ -45,12 +52,27 @@ const DescriptionCallout: React.FC<DescriptionCalloutProps> = function Descripti
                 href={helpLink}
                 rel="noopener noreferrer"
                 target="_blank"
+                onClick={() => {
+                  telemetryLogger?.log('HelpLinkClicked', { url: helpLink });
+                }}
               >
                 {formatMessage('Learn more')}
               </Link>
             )}
           </div>
         ),
+      }}
+      onTooltipToggle={(visible) => {
+        // Only log TooltipOpened telemetry if the tooltip
+        // was opened for more than half a second
+        if (visible) {
+          telemetryTimeoutRef.current = setTimeout(() => {
+            telemetryLogger?.log('TooltipOpened', { location: baseSchema?.properties?.$kind.const as string, title });
+          }, 500);
+        } else {
+          clearTimeout(telemetryTimeoutRef.current);
+          telemetryTimeoutRef.current = undefined;
+        }
       }}
     >
       <div css={focusBorder} data-testid="FieldLabelDescriptionIcon" tabIndex={0}>

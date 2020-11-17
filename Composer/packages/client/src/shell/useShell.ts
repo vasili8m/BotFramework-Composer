@@ -29,6 +29,7 @@ import {
   rootBotProjectIdSelector,
 } from '../recoilModel';
 import { undoFunctionState } from '../recoilModel/undo/history';
+import { useEventLogger } from '../telemetry/hooks';
 
 import { useLgApi } from './lgApi';
 import { useLuApi } from './luApi';
@@ -165,7 +166,10 @@ export function useShell(source: EventSource, projectId: string): Shell {
 
   dialogMapRef.current = dialogsMap;
 
+  const telemetryLogger = useEventLogger({ page: 'Design', source });
+
   const api: ShellApi = {
+    telemetryLogger,
     getDialog: (dialogId: string) => {
       return dialogMapRef.current[dialogId];
     },
