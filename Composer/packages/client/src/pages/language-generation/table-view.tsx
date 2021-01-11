@@ -130,6 +130,15 @@ const TableView: React.FC<TableViewProps> = (props) => {
     [file, actualProjectId]
   );
 
+  const onEvaluateTemplate = useCallback(
+    (name) => {
+      if (file) {
+        const result = lgUtil.evaluate(file.id, file.content, lgFiles, name, scope);
+      }
+    },
+    [file, actualProjectId]
+  );
+
   const handleTemplateUpdate = useCallback(
     (templateName: string, template: LgTemplate) => {
       if (file) {
@@ -184,6 +193,13 @@ const TableView: React.FC<TableViewProps> = (props) => {
           onClick: () => {
             setMessage('item copied');
             onCopyTemplate(item.name);
+          },
+        },
+        {
+          key: 'evaluate',
+          name: formatMessage('evaluate this template'),
+          onClick: () => {
+            onEvaluateTemplate(item.name);
           },
         },
       ];

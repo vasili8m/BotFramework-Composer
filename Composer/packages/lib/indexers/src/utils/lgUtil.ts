@@ -274,3 +274,10 @@ export function parse(id: string, content: string, lgFiles: TextFile[]): LgFile 
 
   return lgIndexer.parse(content, id, lgImportResolver);
 }
+
+export function evaluate(id: string, content: string, lgFiles: TextFile[], templateName: string, scope: any): any {
+  const lgImportResolver = lgImportResolverGenerator(lgFiles, '.lg');
+  const lgFile = Templates.parseText(content, id, lgImportResolver);
+  const result = lgFile.evaluate(templateName, scope);
+  return result;
+}
