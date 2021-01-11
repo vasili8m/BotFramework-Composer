@@ -23,6 +23,7 @@
     "@bfc/intellisense": "*",
     "@uifabric/fluent-theme": "^7.1.4",
     "@uifabric/icons": "^7.3.0",
+    "@uifabric/react-hooks": "^7.13.9",
     "@uifabric/styling": "^7.7.4",
     "format-message": "^6.2.3",
     "office-ui-fabric-react": "^7.71.0",
@@ -41,9 +42,10 @@
     "react-dom": "16.13.1"
   },
   "dependencies": {
+    "@bfc/built-in-functions": "*",
     "@emotion/core": "^10.0.27",
+    "adaptive-expressions": "^4.11.0",
     "lodash": "^4.17.19",
-    "react-error-boundary": "^1.2.5",
-    "@bfc/built-in-functions": "*"
+    "react-error-boundary": "^1.2.5"
   }
 }
