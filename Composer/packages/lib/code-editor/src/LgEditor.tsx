@@ -1,13 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { listen, MessageConnection } from 'vscode-ws-jsonrpc';
 import get from 'lodash/get';
 import { MonacoServices, MonacoLanguageClient } from 'monaco-languageclient';
 import { EditorDidMount } from '@monaco-editor/react';
 import formatMessage from 'format-message';
-import { languages as monacoLanguages, IDisposable } from 'monaco-editor';
+import { IDisposable } from 'monaco-editor';
 
 import { registerLGLanguage } from './languages';
 import { createUrl, createWebSocket, createLanguageClient, SendRequestWithRetry } from './utils/lspUtil';
@@ -61,7 +61,7 @@ export function LgEditor(props: LGLSPEditorProps) {
   }
 
   const [editor, setEditor] = useState<any>();
-
+  const monacoRef = useRef<any>(undefined);
   useEffect(() => {
     if (!editor) return;
 
@@ -95,7 +95,7 @@ export function LgEditor(props: LGLSPEditorProps) {
 
   const onInit: OnInit = (monaco) => {
     registerLGLanguage(monaco);
-
+    monacoRef.current = monaco;
     if (typeof onInitProp === 'function') {
       onInitProp(monaco);
     }
@@ -112,39 +112,68 @@ export function LgEditor(props: LGLSPEditorProps) {
   const editorDidMount: EditorDidMount = (_getValue, lgEditor) => {
     try {
       setEditor(lgEditor);
-      console.log('start1');
-      const commandId = lgEditor.addCommand(0, () => console.log('post message'), '');
-      console.log('start2');
-      const codeLensProvider = monacoLanguages.registerCodeLensProvider('botbuilderlg', {
-        provideCodeLenses: function (model, token) {
-          console.log('register lg');
-          return {
-            lenses: [
-              {
-                range: {
-                  startLineNumber: 1,
-                  startColumn: 0,
-                  endLineNumber: 1,
-                  endColumn: 0,
-                },
-                id: `Evaluate template}`,
-                command: {
-                  id: commandId ?? '',
-                  title: 'Evaluate this template',
-                },
+      const commandId = lgEditor.addCommand(
+        0,
+        (service, templateName: string) => {
+          console.log('post message:');
+          console.log(templateName);
+          window.postMessage({ templateName: templateName }, '*');
+        },
+        ''
+      );
+
+      if (monacoRef.current) {
+        const codeLensProvider = monacoRef.current.languages.registerCodeLensProvider('botbuilderlg', {
+          provideCodeLenses: function (model, token) {
+            const lines = model.getLinesContent();
+            let lenses: unknown[] = [];
+            lines.forEach((item, index) => {
+              // extract templateName
+              if (item.startsWith('#')) {
+                item = item.trim().substr(1).trim();
+                let templateName = '';
+                const leftBracketIndex = item.indexOf('(');
+                if (leftBracketIndex < 0) {
+                  templateName = item;
+                } else {
+                  templateName = item.substr(0, leftBracketIndex);
+                }
+                templateName = templateName.trim();
+
+                if (templateName) {
+                  lenses.push({
+                    range: {
+                      startLineNumber: index + 1,
+                      startColumn: 0,
+                      endLineNumber: index + 1,
+                      endColumn: 0,
+                    },
+                    id: `Evaluate template ${templateName}`,
+                    command: {
+                      id: commandId,
+                      title: 'Evaluate this template',
+                      arguments: [templateName],
+                    },
+                  });
+                }
+              }
+            });
+            return {
+              lenses: lenses,
+              dispose: () => {
+                lenses = [];
               },
-            ],
-            dispose: () => {},
-          };
-        },
-        resolveCodeLens: function (model, codeLens, token) {
-          return codeLens;
-        },
-      });
-      provider = codeLensProvider;
-      console.log('start3');
-      if (typeof props.editorDidMount === 'function') {
-        return props.editorDidMount(_getValue, lgEditor);
+            };
+          },
+          resolveCodeLens: function (model, codeLens, token) {
+            return codeLens;
+          },
+        });
+        provider = codeLensProvider;
+
+        if (typeof props.editorDidMount === 'function') {
+          return props.editorDidMount(_getValue, lgEditor);
+        }
       }
     } catch (error) {
       console.log(error.message);

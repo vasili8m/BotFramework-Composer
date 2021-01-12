@@ -8,16 +8,18 @@ import formatMessage from 'format-message';
 import { ActionButton } from 'office-ui-fabric-react/lib/Button';
 import { RouteComponentProps, Router } from '@reach/router';
 import { useRecoilValue } from 'recoil';
+import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
+import { Panel, TextField } from 'office-ui-fabric-react';
+import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
 
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { navigateTo } from '../../utils/navigation';
 import { Page } from '../../components/Page';
 import { validateDialogsSelectorFamily } from '../../recoilModel';
 import TelemetryClient from '../../telemetry/TelemetryClient';
-import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
+
 import TableView from './table-view';
-import { Panel, TextField } from 'office-ui-fabric-react';
-import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
+
 const CodeEditor = React.lazy(() => import('./code-editor'));
 
 const LGPage: React.FC<RouteComponentProps<{
@@ -85,14 +87,18 @@ const LGPage: React.FC<RouteComponentProps<{
   const VirtualButton = () => {
     const sendMessage = hooks.useSendMessage();
     React.useEffect(() => {
+      console.log('register');
       window.addEventListener('message', handleHelpButtonClick);
       return () => {
+        console.log('unregister');
         window.removeEventListener('message', handleHelpButtonClick);
       };
     }, []);
 
     const handleHelpButtonClick = React.useCallback(
       (e) => {
+        console.log('receive message:');
+        console.log(e.data);
         if (e.data.templateName) {
           console.log('get message');
           openPanel();
@@ -123,10 +129,9 @@ const LGPage: React.FC<RouteComponentProps<{
     >
       <Suspense fallback={<LoadingSpinner />}>
         <Components.Composer
-          directLine={directLine}
-          userID={'default-user'}
-          store={store}
           className="webchat__chat"
+          directLine={directLine}
+          store={store}
           styleOptions={{
             bubbleBackground: '#F4F4F4',
             bubbleBorderColor: '#F4F4F4',
@@ -145,6 +150,7 @@ const LGPage: React.FC<RouteComponentProps<{
             bubbleFromUserNubSize: 10,
             bubbleFromUserTextColor: 'White',
           }}
+          userID={'default-user'}
         >
           <Router component={Fragment} primary={false}>
             <CodeEditor
@@ -157,22 +163,22 @@ const LGPage: React.FC<RouteComponentProps<{
             <TableView dialogId={dialogId} lgFileId={lgFileId} path="/" projectId={projectId} />
           </Router>
           <Panel
+            closeButtonAriaLabel="Close"
             headerText="LG Evaluation"
+            isBlocking={false}
             isOpen={isOpen}
             onDismiss={dismissPanel}
-            closeButtonAriaLabel="Close"
-            isBlocking={false}
           >
             <TextField
               multiline
-              rows={8}
               label="Standard"
               placeholder="please input the properties"
+              rows={8}
               onChange={(e, newValue) => console.log(newValue)}
             />
-            <VirtualButton />
             <Components.BasicWebChat />
           </Panel>
+          <VirtualButton />
         </Components.Composer>
       </Suspense>
     </Page>
