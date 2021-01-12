@@ -8,6 +8,7 @@ import { MonacoServices, MonacoLanguageClient } from 'monaco-languageclient';
 import { EditorDidMount } from '@monaco-editor/react';
 import formatMessage from 'format-message';
 import { languages as monacoLanguages, IDisposable } from 'monaco-editor';
+
 import { registerLGLanguage } from './languages';
 import { createUrl, createWebSocket, createLanguageClient, SendRequestWithRetry } from './utils/lspUtil';
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
@@ -109,47 +110,44 @@ export function LgEditor(props: LGLSPEditorProps) {
   }, []);
 
   const editorDidMount: EditorDidMount = (_getValue, lgEditor) => {
-    setEditor(lgEditor);
-    console.log('start');
-
-    const commandId = lgEditor.addCommand(
-      0,
-      function (service) {
-        console.log('post message');
-      },
-      ''
-    );
-
-    const codeLensProvider = monacoLanguages.registerCodeLensProvider('botbuilderlg', {
-      provideCodeLenses: function (model, token) {
-        console.log('register lg');
-        return {
-          lenses: [
-            {
-              range: {
-                startLineNumber: 1,
-                startColumn: 0,
-                endLineNumber: 1,
-                endColumn: 0,
+    try {
+      setEditor(lgEditor);
+      console.log('start1');
+      const commandId = lgEditor.addCommand(0, () => console.log('post message'), '');
+      console.log('start2');
+      const codeLensProvider = monacoLanguages.registerCodeLensProvider('botbuilderlg', {
+        provideCodeLenses: function (model, token) {
+          console.log('register lg');
+          return {
+            lenses: [
+              {
+                range: {
+                  startLineNumber: 1,
+                  startColumn: 0,
+                  endLineNumber: 1,
+                  endColumn: 0,
+                },
+                id: `Evaluate template}`,
+                command: {
+                  id: commandId ?? '',
+                  title: 'Evaluate this template',
+                },
               },
-              id: `Evaluate template}`,
-              command: {
-                id: commandId ?? '',
-                title: 'Evaluate this template',
-              },
-            },
-          ],
-          dispose: () => {},
-        };
-      },
-      resolveCodeLens: function (model, codeLens, token) {
-        return codeLens;
-      },
-    });
-    provider = codeLensProvider;
-
-    if (typeof props.editorDidMount === 'function') {
-      return props.editorDidMount(_getValue, lgEditor);
+            ],
+            dispose: () => {},
+          };
+        },
+        resolveCodeLens: function (model, codeLens, token) {
+          return codeLens;
+        },
+      });
+      provider = codeLensProvider;
+      console.log('start3');
+      if (typeof props.editorDidMount === 'function') {
+        return props.editorDidMount(_getValue, lgEditor);
+      }
+    } catch (error) {
+      console.log(error.message);
     }
   };
 

@@ -20,6 +20,10 @@ import { LgTemplate } from '@bfc/shared';
 import { useRecoilValue } from 'recoil';
 import { lgUtil } from '@bfc/indexers';
 import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
+import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
+import { Panel } from 'office-ui-fabric-react/lib/components/Panel/Panel';
+import { TextField } from 'office-ui-fabric-react/lib/components/TextField/TextField';
+import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
 
 import { EditableField } from '../../components/EditableField';
 import { navigateTo } from '../../utils/navigation';
@@ -33,10 +37,6 @@ import {
 } from '../../recoilModel';
 import { languageListTemplates } from '../../components/MultiLanguage';
 import TelemetryClient from '../../telemetry/TelemetryClient';
-import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
-import { Panel } from 'office-ui-fabric-react/lib/components/Panel/Panel';
-import { TextField } from 'office-ui-fabric-react/lib/components/TextField/TextField';
-import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
 
 interface TableViewProps extends RouteComponentProps<{ dialogId: string; skillId: string; projectId: string }> {
   projectId?: string;
@@ -499,7 +499,7 @@ const TableView: React.FC<TableViewProps> = (props) => {
       sendMessage(`run ${templateName.current ?? ''}`);
     }, [sendMessage]);
 
-    return <DefaultButton onClick={handleHelpButtonClick} text="Evaluate" />;
+    return <DefaultButton text="Evaluate" onClick={handleHelpButtonClick} />;
   };
 
   const store = useMemo(
@@ -552,42 +552,42 @@ const TableView: React.FC<TableViewProps> = (props) => {
         />
       </ScrollablePane>
 
-      <Panel headerText="LG Evaluation" isOpen={isOpen} onDismiss={dismissPanel} closeButtonAriaLabel="Close">
-        <Components.Composer
-          directLine={directLine}
-          userID={'default-user'}
-          store={store}
-          className="webchat__chat"
-          styleOptions={{
-            bubbleBackground: '#F4F4F4',
-            bubbleBorderColor: '#F4F4F4',
-            bubbleBorderRadius: 4,
-            bubbleBorderWidth: 2,
-            bubbleNubOffset: 0,
-            bubbleNubSize: 10,
-            hideUploadButton: true,
-            rootHeight: 800,
+      <Components.Composer
+        className="webchat__chat"
+        directLine={directLine}
+        store={store}
+        styleOptions={{
+          bubbleBackground: '#F4F4F4',
+          bubbleBorderColor: '#F4F4F4',
+          bubbleBorderRadius: 4,
+          bubbleBorderWidth: 2,
+          bubbleNubOffset: 0,
+          bubbleNubSize: 10,
+          hideUploadButton: true,
+          rootHeight: 800,
 
-            bubbleFromUserBackground: '#3178c6',
-            bubbleFromUserBorderColor: '#3178c6',
-            bubbleFromUserBorderRadius: 4,
-            bubbleFromUserBorderWidth: 2,
-            bubbleFromUserNubOffset: 0,
-            bubbleFromUserNubSize: 10,
-            bubbleFromUserTextColor: 'White',
-          }}
-        >
+          bubbleFromUserBackground: '#3178c6',
+          bubbleFromUserBorderColor: '#3178c6',
+          bubbleFromUserBorderRadius: 4,
+          bubbleFromUserBorderWidth: 2,
+          bubbleFromUserNubOffset: 0,
+          bubbleFromUserNubSize: 10,
+          bubbleFromUserTextColor: 'White',
+        }}
+        userID={'default-user'}
+      >
+        <Panel closeButtonAriaLabel="Close" headerText="LG Evaluation" isOpen={isOpen} onDismiss={dismissPanel}>
           <TextField
             multiline
-            rows={8}
             label="Standard"
             placeholder="please input the properties"
+            rows={8}
             onChange={(e, newValue) => (lgProperty.current = newValue ?? '{}')}
           />
           <SendHelpMessageButton />
           <Components.BasicWebChat />
-        </Components.Composer>
-      </Panel>
+        </Panel>
+      </Components.Composer>
     </div>
   );
 };
