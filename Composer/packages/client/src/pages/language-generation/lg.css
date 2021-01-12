@@ -1,0 +1,18 @@
+.webchat__chat {
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  margin: auto;
+  transition-duration: 0.5s;
+  transition-property: max-width, min-width, width;
+}
+
+#webchat {
+  height: 100%;
+  margin: 0;
+  transition-duration: 0.5s;
+  transition-property: margin;
+}

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 /** @jsx jsx */
+import './lg.css';
 import { jsx } from '@emotion/core';
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import isEmpty from 'lodash/isEmpty';
@@ -18,6 +19,7 @@ import { RouteComponentProps } from '@reach/router';
 import { LgTemplate } from '@bfc/shared';
 import { useRecoilValue } from 'recoil';
 import { lgUtil } from '@bfc/indexers';
+import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
 
 import { EditableField } from '../../components/EditableField';
 import { navigateTo } from '../../utils/navigation';
@@ -34,6 +36,7 @@ import TelemetryClient from '../../telemetry/TelemetryClient';
 import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
 import { Panel } from 'office-ui-fabric-react/lib/components/Panel/Panel';
 import { TextField } from 'office-ui-fabric-react/lib/components/TextField/TextField';
+import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
 
 interface TableViewProps extends RouteComponentProps<{ dialogId: string; skillId: string; projectId: string }> {
   projectId?: string;
@@ -71,7 +74,7 @@ const TableView: React.FC<TableViewProps> = (props) => {
   const activeDialog = dialogs.find(({ id }) => id === dialogId);
   const lgProperty = useRef<string>('{}');
   const templateName = useRef<string | undefined>(undefined);
-  const [lgResult, setLGResult] = useState<string>('');
+  const lgResult = useRef<Partial<Activity>>({});
   //const [focusedIndex, setFocusedIndex] = useState(0);
   const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
   useEffect(() => {
@@ -197,7 +200,6 @@ const TableView: React.FC<TableViewProps> = (props) => {
           onClick: () => {
             templateName.current = item.name;
             openPanel();
-            //onEvaluateTemplate(item.name);
           },
         },
       ];
@@ -473,7 +475,53 @@ const TableView: React.FC<TableViewProps> = (props) => {
     return templates;
   }, [templates, defaultLangFile, locale, defaultLanguage]);
 
-  const evaluate = (e) => {};
+  const SendHelpMessageButton = () => {
+    const sendMessage = hooks.useSendMessage();
+
+    const handleHelpButtonClick = useCallback(() => {
+      if (file) {
+        try {
+          const result = lgUtil.evaluate(
+            file.id,
+            file.content,
+            lgFiles,
+            templateName.current ?? '',
+            JSON.parse(lgProperty.current)
+          );
+          const activity = ActivityFactory.fromObject(result);
+          if (activity) {
+            lgResult.current = activity;
+          }
+        } catch (error) {
+          lgResult.current = MessageFactory.text(error.message);
+        }
+      }
+      sendMessage(`run ${templateName.current ?? ''}`);
+    }, [sendMessage]);
+
+    return <DefaultButton onClick={handleHelpButtonClick} text="Evaluate" />;
+  };
+
+  const store = useMemo(
+    () =>
+      createStore({}, () => (next: (arg0: { type: any }) => any) => (action: { type: any; payload: any }) => {
+        if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY' && action?.payload?.activity?.from?.role === 'bot') {
+          if (lgResult.current) {
+            Object.assign(action.payload.activity, lgResult.current);
+          }
+        }
+        return next(action);
+      }),
+    []
+  );
+
+  const directLine = useMemo(
+    () =>
+      createDirectLine({
+        token: '0YGXa4bDDsI.fTaNq2FIyafGqdKlF1FddZZkumA93KiVkL2NBZWZ2ic',
+      }),
+    []
+  );
 
   return (
     <div className={'table-view'} data-testid={'table-view'}>
@@ -504,19 +552,41 @@ const TableView: React.FC<TableViewProps> = (props) => {
         />
       </ScrollablePane>
 
-      <Panel headerText="Sample panel" isOpen={isOpen} onDismiss={dismissPanel} closeButtonAriaLabel="Close">
-        <TextField
-          multiline
-          rows={8}
-          label="Standard"
-          placeholder="please input the properties"
-          onChange={(e, newValue) => (lgProperty.current = newValue ?? '{}')}
-        />
-        <DefaultButton text="Evaluate" onClick={evaluate} />
-        <br />
-        Evaluate result:
-        <br />
-        {lgResult}
+      <Panel headerText="LG Evaluation" isOpen={isOpen} onDismiss={dismissPanel} closeButtonAriaLabel="Close">
+        <Components.Composer
+          directLine={directLine}
+          userID={'default-user'}
+          store={store}
+          className="webchat__chat"
+          styleOptions={{
+            bubbleBackground: '#F4F4F4',
+            bubbleBorderColor: '#F4F4F4',
+            bubbleBorderRadius: 4,
+            bubbleBorderWidth: 2,
+            bubbleNubOffset: 0,
+            bubbleNubSize: 10,
+            hideUploadButton: true,
+            rootHeight: 800,
+
+            bubbleFromUserBackground: '#3178c6',
+            bubbleFromUserBorderColor: '#3178c6',
+            bubbleFromUserBorderRadius: 4,
+            bubbleFromUserBorderWidth: 2,
+            bubbleFromUserNubOffset: 0,
+            bubbleFromUserNubSize: 10,
+            bubbleFromUserTextColor: 'White',
+          }}
+        >
+          <TextField
+            multiline
+            rows={8}
+            label="Standard"
+            placeholder="please input the properties"
+            onChange={(e, newValue) => (lgProperty.current = newValue ?? '{}')}
+          />
+          <SendHelpMessageButton />
+          <Components.BasicWebChat />
+        </Components.Composer>
       </Panel>
     </div>
   );
