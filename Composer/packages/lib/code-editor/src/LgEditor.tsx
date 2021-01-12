@@ -7,13 +7,12 @@ import get from 'lodash/get';
 import { MonacoServices, MonacoLanguageClient } from 'monaco-languageclient';
 import { EditorDidMount } from '@monaco-editor/react';
 import formatMessage from 'format-message';
-import { languages as monacoLanguages } from 'monaco-editor';
+import { languages as monacoLanguages, IDisposable } from 'monaco-editor';
 import { registerLGLanguage } from './languages';
 import { createUrl, createWebSocket, createLanguageClient, SendRequestWithRetry } from './utils/lspUtil';
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { LGOption } from './utils';
 import { LG_HELP } from './constants';
-import { IDisposable } from 'monaco-editor';
 
 const placeholder = formatMessage(
   `> To learn more about the LG file format, read the documentation at
@@ -123,6 +122,7 @@ export function LgEditor(props: LGLSPEditorProps) {
 
     const codeLensProvider = monacoLanguages.registerCodeLensProvider('botbuilderlg', {
       provideCodeLenses: function (model, token) {
+        console.log('register lg');
         return {
           lenses: [
             {
@@ -149,7 +149,7 @@ export function LgEditor(props: LGLSPEditorProps) {
     provider = codeLensProvider;
 
     if (typeof props.editorDidMount === 'function') {
-      return props.editorDidMount(_getValue, editor);
+      return props.editorDidMount(_getValue, lgEditor);
     }
   };
 
