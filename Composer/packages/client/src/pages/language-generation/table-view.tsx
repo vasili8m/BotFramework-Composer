@@ -6,7 +6,7 @@ import { jsx } from '@emotion/core';
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import isEmpty from 'lodash/isEmpty';
 import { DetailsList, DetailsListLayoutMode, SelectionMode, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
-import { ActionButton } from 'office-ui-fabric-react/lib/Button';
+import { ActionButton, DefaultButton } from 'office-ui-fabric-react/lib/Button';
 import { IconButton } from 'office-ui-fabric-react/lib/Button';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import { TooltipHost } from 'office-ui-fabric-react/lib/Tooltip';
@@ -31,6 +31,9 @@ import {
 } from '../../recoilModel';
 import { languageListTemplates } from '../../components/MultiLanguage';
 import TelemetryClient from '../../telemetry/TelemetryClient';
+import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
+import { Panel } from 'office-ui-fabric-react/lib/components/Panel/Panel';
+import { TextField } from 'office-ui-fabric-react/lib/components/TextField/TextField';
 
 interface TableViewProps extends RouteComponentProps<{ dialogId: string; skillId: string; projectId: string }> {
   projectId?: string;
@@ -66,9 +69,11 @@ const TableView: React.FC<TableViewProps> = (props) => {
   const listRef = useRef(null);
 
   const activeDialog = dialogs.find(({ id }) => id === dialogId);
-
+  const lgProperty = useRef<string>('{}');
+  const templateName = useRef<string | undefined>(undefined);
+  const [lgResult, setLGResult] = useState<string>('');
   //const [focusedIndex, setFocusedIndex] = useState(0);
-
+  const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
   useEffect(() => {
     if (!file || isEmpty(file)) return;
 
@@ -184,6 +189,15 @@ const TableView: React.FC<TableViewProps> = (props) => {
           onClick: () => {
             setMessage('item copied');
             onCopyTemplate(item.name);
+          },
+        },
+        {
+          key: 'evaluate',
+          name: formatMessage('Evaluate this template'),
+          onClick: () => {
+            templateName.current = item.name;
+            openPanel();
+            //onEvaluateTemplate(item.name);
           },
         },
       ];
@@ -459,6 +473,8 @@ const TableView: React.FC<TableViewProps> = (props) => {
     return templates;
   }, [templates, defaultLangFile, locale, defaultLanguage]);
 
+  const evaluate = (e) => {};
+
   return (
     <div className={'table-view'} data-testid={'table-view'}>
       <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
@@ -487,6 +503,21 @@ const TableView: React.FC<TableViewProps> = (props) => {
           onRenderDetailsHeader={onRenderDetailsHeader}
         />
       </ScrollablePane>
+
+      <Panel headerText="Sample panel" isOpen={isOpen} onDismiss={dismissPanel} closeButtonAriaLabel="Close">
+        <TextField
+          multiline
+          rows={8}
+          label="Standard"
+          placeholder="please input the properties"
+          onChange={(e, newValue) => (lgProperty.current = newValue ?? '{}')}
+        />
+        <DefaultButton text="Evaluate" onClick={evaluate} />
+        <br />
+        Evaluate result:
+        <br />
+        {lgResult}
+      </Panel>
     </div>
   );
 };
