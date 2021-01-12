@@ -7,12 +7,13 @@ import get from 'lodash/get';
 import { MonacoServices, MonacoLanguageClient } from 'monaco-languageclient';
 import { EditorDidMount } from '@monaco-editor/react';
 import formatMessage from 'format-message';
-
+import { languages as monacoLanguages } from 'monaco-editor';
 import { registerLGLanguage } from './languages';
 import { createUrl, createWebSocket, createLanguageClient, SendRequestWithRetry } from './utils/lspUtil';
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { LGOption } from './utils';
 import { LG_HELP } from './constants';
+import { IDisposable } from 'monaco-editor';
 
 const placeholder = formatMessage(
   `> To learn more about the LG file format, read the documentation at
@@ -43,6 +44,7 @@ declare global {
 }
 
 export function LgEditor(props: LGLSPEditorProps) {
+  let provider: IDisposable;
   const options = {
     quickSuggestions: true,
     wordBasedSuggestions: false,
@@ -99,8 +101,53 @@ export function LgEditor(props: LGLSPEditorProps) {
     }
   };
 
-  const editorDidMount: EditorDidMount = (_getValue, editor) => {
-    setEditor(editor);
+  React.useEffect(() => {
+    return () => {
+      if (provider) {
+        provider.dispose();
+      }
+    };
+  }, []);
+
+  const editorDidMount: EditorDidMount = (_getValue, lgEditor) => {
+    setEditor(lgEditor);
+    console.log('start');
+
+    const commandId = lgEditor.addCommand(
+      0,
+      function (service) {
+        console.log('post message');
+      },
+      ''
+    );
+
+    const codeLensProvider = monacoLanguages.registerCodeLensProvider('botbuilderlg', {
+      provideCodeLenses: function (model, token) {
+        return {
+          lenses: [
+            {
+              range: {
+                startLineNumber: 1,
+                startColumn: 0,
+                endLineNumber: 1,
+                endColumn: 0,
+              },
+              id: `Evaluate template}`,
+              command: {
+                id: commandId ?? '',
+                title: 'Evaluate this template',
+              },
+            },
+          ],
+          dispose: () => {},
+        };
+      },
+      resolveCodeLens: function (model, codeLens, token) {
+        return codeLens;
+      },
+    });
+    provider = codeLensProvider;
+
     if (typeof props.editorDidMount === 'function') {
       return props.editorDidMount(_getValue, editor);
     }

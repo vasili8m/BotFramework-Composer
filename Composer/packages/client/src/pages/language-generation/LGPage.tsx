@@ -3,7 +3,7 @@
 
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
-import React, { Fragment, useCallback, Suspense, useEffect } from 'react';
+import React, { Fragment, useCallback, Suspense, useEffect, useMemo } from 'react';
 import formatMessage from 'format-message';
 import { ActionButton } from 'office-ui-fabric-react/lib/Button';
 import { RouteComponentProps, Router } from '@reach/router';
@@ -14,8 +14,10 @@ import { navigateTo } from '../../utils/navigation';
 import { Page } from '../../components/Page';
 import { validateDialogsSelectorFamily } from '../../recoilModel';
 import TelemetryClient from '../../telemetry/TelemetryClient';
-
+import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
 import TableView from './table-view';
+import { Panel, TextField } from 'office-ui-fabric-react';
+import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
 const CodeEditor = React.lazy(() => import('./code-editor'));
 
 const LGPage: React.FC<RouteComponentProps<{
@@ -59,6 +61,50 @@ const LGPage: React.FC<RouteComponentProps<{
     );
   };
 
+  const directLine = useMemo(
+    () =>
+      createDirectLine({
+        token: '0YGXa4bDDsI.fTaNq2FIyafGqdKlF1FddZZkumA93KiVkL2NBZWZ2ic',
+      }),
+    []
+  );
+
+  const store = useMemo(
+    () =>
+      createStore({}, () => (next: (arg0: { type: any }) => any) => (action: { type: any; payload: any }) => {
+        if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY' && action?.payload?.activity?.from?.role === 'bot') {
+          //
+        }
+        return next(action);
+      }),
+    []
+  );
+
+  const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
+
+  const VirtualButton = () => {
+    const sendMessage = hooks.useSendMessage();
+    React.useEffect(() => {
+      window.addEventListener('message', handleHelpButtonClick);
+      return () => {
+        window.removeEventListener('message', handleHelpButtonClick);
+      };
+    }, []);
+
+    const handleHelpButtonClick = React.useCallback(
+      (e) => {
+        if (e.data.templateName) {
+          console.log('get message');
+          openPanel();
+          sendMessage(`run ${e.data.templateName}`);
+        }
+      },
+      [sendMessage]
+    );
+
+    return <div style={{ display: 'none' }}></div>;
+  };
+
   return (
     <Page
       showCommonLinks
@@ -76,10 +122,58 @@ const LGPage: React.FC<RouteComponentProps<{
       onRenderHeaderContent={onRenderHeaderContent}
     >
       <Suspense fallback={<LoadingSpinner />}>
-        <Router component={Fragment} primary={false}>
-          <CodeEditor dialogId={dialogId} lgFileId={lgFileId} path="/edit/*" projectId={projectId} skillId={skillId} />
-          <TableView dialogId={dialogId} lgFileId={lgFileId} path="/" projectId={projectId} />
-        </Router>
+        <Components.Composer
+          directLine={directLine}
+          userID={'default-user'}
+          store={store}
+          className="webchat__chat"
+          styleOptions={{
+            bubbleBackground: '#F4F4F4',
+            bubbleBorderColor: '#F4F4F4',
+            bubbleBorderRadius: 4,
+            bubbleBorderWidth: 2,
+            bubbleNubOffset: 0,
+            bubbleNubSize: 10,
+            hideUploadButton: true,
+            rootHeight: 800,
+
+            bubbleFromUserBackground: '#3178c6',
+            bubbleFromUserBorderColor: '#3178c6',
+            bubbleFromUserBorderRadius: 4,
+            bubbleFromUserBorderWidth: 2,
+            bubbleFromUserNubOffset: 0,
+            bubbleFromUserNubSize: 10,
+            bubbleFromUserTextColor: 'White',
+          }}
+        >
+          <Router component={Fragment} primary={false}>
+            <CodeEditor
+              dialogId={dialogId}
+              lgFileId={lgFileId}
+              path="/edit/*"
+              projectId={projectId}
+              skillId={skillId}
+            />
+            <TableView dialogId={dialogId} lgFileId={lgFileId} path="/" projectId={projectId} />
+          </Router>
+          <Panel
+            headerText="LG Evaluation"
+            isOpen={isOpen}
+            onDismiss={dismissPanel}
+            closeButtonAriaLabel="Close"
+            isBlocking={false}
+          >
+            <TextField
+              multiline
+              rows={8}
+              label="Standard"
+              placeholder="please input the properties"
+              onChange={(e, newValue) => console.log(newValue)}
+            />
+            <VirtualButton />
+            <Components.BasicWebChat />
+          </Panel>
+        </Components.Composer>
       </Suspense>
     </Page>
   );
