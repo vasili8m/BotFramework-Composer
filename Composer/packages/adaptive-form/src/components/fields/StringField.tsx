@@ -8,10 +8,10 @@ import { ITextField, TextField } from 'office-ui-fabric-react/lib/TextField';
 import formatMessage from 'format-message';
 import { useBoolean } from '@uifabric/react-hooks';
 import { Expression } from 'adaptive-expressions';
-
 import { FieldLabel } from '../FieldLabel';
-import { DefaultButton } from 'office-ui-fabric-react/lib/components/Button/DefaultButton/DefaultButton';
+import { JsonEditor } from '@bfc/code-editor';
 import { Modal } from 'office-ui-fabric-react/lib/components/Modal/Modal';
+import { getTheme, IconButton } from 'office-ui-fabric-react';
 
 export const borderStyles = (transparentBorder: boolean, error: boolean) =>
   transparentBorder
@@ -49,10 +49,10 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
   } = props;
 
   const textFieldRef = React.createRef<ITextField>();
-  const [isModalOpen, { setTrue: showModal, setFalse: hideModal }] = useBoolean(false);
-  const expressionProperty = useRef<string>('{}');
+  const [isModalOpen, { setTrue: openPanel, setFalse: hideModal }] = useBoolean(false);
   const [expressionResult, setExpressionResult] = useState<string>('');
-  const expression = useRef<string>('');
+  const [hidePropertiesButton, setHidePropertiesButton] = useState<boolean>(true);
+  const expression = useRef<string>(value);
   useEffect(() => {
     if (focused && textFieldRef.current) {
       textFieldRef.current.focus();
@@ -85,13 +85,15 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
   };
 
   const evaluate = (e) => {
+    console.log('start evaluate');
     let currentExprStr = expression?.current;
     if (expression?.current) {
+      console.log(`expression is ${expression?.current}`);
       if (expression.current.startsWith('=')) {
         currentExprStr = currentExprStr.substr(1).trim();
       }
       try {
-        const scope = JSON.parse(expressionProperty.current);
+        const scope = JSON.parse(sessionStorage.getItem('properties') ?? '{}');
         const valueWithError = Expression.parse(currentExprStr).tryEvaluate(scope);
         if (valueWithError.error) {
           setExpressionResult(valueWithError.error);
@@ -107,7 +109,7 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
       }
     }
   };
-
+  const theme = getTheme();
   return (
     <>
       <div>
@@ -118,44 +120,67 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
           label={label}
           required={required}
         />
-        <DefaultButton text="Evaluate" onClick={showModal} />
-        <Modal titleAriaId={'title'} isOpen={isModalOpen} onDismiss={hideModal} isBlocking={false}>
-          Properties:
-          <TextField
-            multiline
-            rows={3}
-            label="Standard"
-            placeholder="please input the properties"
-            onChange={(e, newValue) => (expressionProperty.current = newValue ?? '{}')}
-          />
-          <DefaultButton text="Evaluate" onClick={evaluate} />
-          <br />
-          {expressionResult}
-        </Modal>
+      </div>
+      <div onMouseOver={() => setHidePropertiesButton(false)} onMouseLeave={() => setHidePropertiesButton(true)}>
+        <TextField
+          ariaLabel={label || formatMessage('string field')}
+          autoComplete="off"
+          componentRef={textFieldRef}
+          disabled={disabled}
+          errorMessage={error}
+          id={id}
+          placeholder={placeholder}
+          readOnly={readonly}
+          styles={{
+            ...borderStyles(Boolean(transparentBorder), Boolean(error)),
+            root: { width: '100%' },
+            errorMessage: { display: 'none' },
+          }}
+          value={value}
+          onBlur={handleBlur}
+          onChange={handleChange}
+          onClick={props.onClick}
+          onFocus={handleFocus}
+          onKeyDown={props.onKeyDown}
+          onKeyUp={props.onKeyUp}
+          iconProps={{ iconName: 'Play', style: { pointerEvents: 'auto', cursor: 'pointer' }, onClick: evaluate }}
+        />
+        {!hidePropertiesButton && (
+          <div>
+            <div style={{ float: 'left', color: 'grey', paddingLeft: '20px' }}>{expressionResult}</div>
+            <div style={{ float: 'right' }}>
+              <a href="javascript:;" onClick={openPanel}>
+                Configurations
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
-      <TextField
-        ariaLabel={label || formatMessage('string field')}
-        autoComplete="off"
-        componentRef={textFieldRef}
-        disabled={disabled}
-        errorMessage={error}
-        id={id}
-        placeholder={placeholder}
-        readOnly={readonly}
-        styles={{
-          ...borderStyles(Boolean(transparentBorder), Boolean(error)),
-          root: { width: '100%' },
-          errorMessage: { display: 'none' },
-        }}
-        value={value}
-        onBlur={handleBlur}
-        onChange={handleChange}
-        onClick={props.onClick}
-        onFocus={handleFocus}
-        onKeyDown={props.onKeyDown}
-        onKeyUp={props.onKeyUp}
-      />
+      <Modal isOpen={isModalOpen} onDismiss={hideModal} isBlocking={true}>
+        <IconButton
+          styles={{
+            root: {
+              color: theme.palette.neutralPrimary,
+              marginRight: '2px',
+              marginLeft: '768px',
+            },
+            rootHovered: {
+              color: theme.palette.neutralDark,
+            },
+          }}
+          iconProps={{ iconName: 'Cancel' }}
+          ariaLabel="Close popup modal"
+          onClick={hideModal}
+        />
+        <JsonEditor
+          onError={() => {}}
+          width="800px"
+          height="800px"
+          value={JSON.parse(sessionStorage.getItem('properties') ?? '{}')}
+          onChange={(newValue) => sessionStorage.setItem('properties', JSON.parse(newValue) ?? '{}')}
+        />
+      </Modal>
     </>
   );
 };

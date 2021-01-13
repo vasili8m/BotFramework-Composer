@@ -3,22 +3,24 @@
 
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
-import React, { Fragment, useCallback, Suspense, useEffect, useMemo } from 'react';
+import React, { Fragment, useCallback, Suspense, useEffect, useMemo, useRef } from 'react';
 import formatMessage from 'format-message';
+import { getTheme, IconButton } from 'office-ui-fabric-react';
 import { ActionButton } from 'office-ui-fabric-react/lib/Button';
 import { RouteComponentProps, Router } from '@reach/router';
 import { useRecoilValue } from 'recoil';
 import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
-import { Panel, TextField } from 'office-ui-fabric-react';
+import { Modal, Panel } from 'office-ui-fabric-react';
 import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
-
+import { lgUtil } from '@bfc/indexers';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { navigateTo } from '../../utils/navigation';
 import { Page } from '../../components/Page';
-import { validateDialogsSelectorFamily } from '../../recoilModel';
+import { lgFilesState, localeState, validateDialogsSelectorFamily } from '../../recoilModel';
 import TelemetryClient from '../../telemetry/TelemetryClient';
-
+import { JsonEditor } from '@bfc/code-editor';
 import TableView from './table-view';
+import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
 
 const CodeEditor = React.lazy(() => import('./code-editor'));
 
@@ -28,7 +30,31 @@ const LGPage: React.FC<RouteComponentProps<{
   skillId: string;
   lgFileId: string;
 }>> = (props) => {
+  const defaultJson = `{
+    "turn": {
+        "activity":{
+            "text":"hello",
+            "speak":"hello",
+            "Recipient":{
+                "id":"my id"
+            }
+        }
+    },
+    "user":{
+        "name":"Jack"
+    }
+}`;
+
+  if (sessionStorage.getItem('properties') == null) {
+    sessionStorage.setItem('properties', defaultJson);
+  }
+
   const { dialogId = '', projectId = '', skillId, lgFileId = '' } = props;
+
+  const lgFiles = useRecoilValue(lgFilesState(projectId));
+  const locale = useRecoilValue(localeState(projectId));
+  const file = lgFiles.find(({ id }) => id === `${dialogId}.${locale}`);
+
   const dialogs = useRecoilValue(validateDialogsSelectorFamily(skillId ?? projectId ?? ''));
 
   const path = props.location?.pathname ?? '';
@@ -62,7 +88,7 @@ const LGPage: React.FC<RouteComponentProps<{
       </ActionButton>
     );
   };
-
+  const lgResult = useRef<Partial<Activity>>({});
   const directLine = useMemo(
     () =>
       createDirectLine({
@@ -75,7 +101,9 @@ const LGPage: React.FC<RouteComponentProps<{
     () =>
       createStore({}, () => (next: (arg0: { type: any }) => any) => (action: { type: any; payload: any }) => {
         if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY' && action?.payload?.activity?.from?.role === 'bot') {
-          //
+          if (lgResult.current) {
+            Object.assign(action.payload.activity, lgResult.current);
+          }
         }
         return next(action);
       }),
@@ -83,24 +111,37 @@ const LGPage: React.FC<RouteComponentProps<{
   );
 
   const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
-
+  const [isModalOpen, { setTrue: showModal, setFalse: hideModal }] = useBoolean(false);
   const VirtualButton = () => {
     const sendMessage = hooks.useSendMessage();
     React.useEffect(() => {
-      console.log('register');
       window.addEventListener('message', handleHelpButtonClick);
       return () => {
-        console.log('unregister');
         window.removeEventListener('message', handleHelpButtonClick);
       };
     }, []);
 
     const handleHelpButtonClick = React.useCallback(
       (e) => {
-        console.log('receive message:');
-        console.log(e.data);
+        const templateName = e.data.templateName;
         if (e.data.templateName) {
-          console.log('get message');
+          if (file) {
+            try {
+              const result = lgUtil.evaluate(
+                file.id,
+                file.content,
+                lgFiles,
+                templateName,
+                JSON.parse(sessionStorage.getItem('properties') ?? '{}')
+              );
+              const activity = ActivityFactory.fromObject(result);
+              if (activity) {
+                lgResult.current = activity;
+              }
+            } catch (error) {
+              lgResult.current = MessageFactory.text(error.message);
+            }
+          }
           openPanel();
           sendMessage(`run ${e.data.templateName}`);
         }
@@ -110,7 +151,7 @@ const LGPage: React.FC<RouteComponentProps<{
 
     return <div style={{ display: 'none' }}></div>;
   };
-
+  const theme = getTheme();
   return (
     <Page
       showCommonLinks
@@ -169,17 +210,37 @@ const LGPage: React.FC<RouteComponentProps<{
             isOpen={isOpen}
             onDismiss={dismissPanel}
           >
-            <TextField
-              multiline
-              label="Standard"
-              placeholder="please input the properties"
-              rows={8}
-              onChange={(e, newValue) => console.log(newValue)}
-            />
+            <a href="javascript:;" onClick={showModal}>
+              Configurations
+            </a>
             <Components.BasicWebChat />
           </Panel>
           <VirtualButton />
         </Components.Composer>
+        <Modal isOpen={isModalOpen} onDismiss={hideModal} isBlocking={true}>
+          <IconButton
+            styles={{
+              root: {
+                color: theme.palette.neutralPrimary,
+                marginRight: '2px',
+                marginLeft: '768px',
+              },
+              rootHovered: {
+                color: theme.palette.neutralDark,
+              },
+            }}
+            iconProps={{ iconName: 'Cancel' }}
+            ariaLabel="Close popup modal"
+            onClick={hideModal}
+          />
+          <JsonEditor
+            onError={() => {}}
+            width="800px"
+            height="800px"
+            value={JSON.parse(sessionStorage.getItem('properties') ?? '{}')}
+            onChange={(newValue) => sessionStorage.setItem('properties', JSON.parse(newValue) ?? '{}')}
+          />
+        </Modal>
       </Suspense>
     </Page>
   );

@@ -44,7 +44,6 @@ declare global {
 }
 
 export function LgEditor(props: LGLSPEditorProps) {
-  let provider: IDisposable;
   const options = {
     quickSuggestions: true,
     wordBasedSuggestions: false,
@@ -62,6 +61,7 @@ export function LgEditor(props: LGLSPEditorProps) {
 
   const [editor, setEditor] = useState<any>();
   const monacoRef = useRef<any>(undefined);
+  const provider = useRef<IDisposable>();
   useEffect(() => {
     if (!editor) return;
 
@@ -103,8 +103,8 @@ export function LgEditor(props: LGLSPEditorProps) {
 
   React.useEffect(() => {
     return () => {
-      if (provider) {
-        provider.dispose();
+      if (provider.current) {
+        provider.current.dispose();
       }
     };
   }, []);
@@ -115,8 +115,6 @@ export function LgEditor(props: LGLSPEditorProps) {
       const commandId = lgEditor.addCommand(
         0,
         (service, templateName: string) => {
-          console.log('post message:');
-          console.log(templateName);
           window.postMessage({ templateName: templateName }, '*');
         },
         ''
@@ -169,7 +167,7 @@ export function LgEditor(props: LGLSPEditorProps) {
             return codeLens;
           },
         });
-        provider = codeLensProvider;
+        provider.current = codeLensProvider;
 
         if (typeof props.editorDidMount === 'function') {
           return props.editorDidMount(_getValue, lgEditor);
