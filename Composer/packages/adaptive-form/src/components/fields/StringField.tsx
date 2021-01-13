@@ -8,10 +8,11 @@ import { ITextField, TextField } from 'office-ui-fabric-react/lib/TextField';
 import formatMessage from 'format-message';
 import { useBoolean } from '@uifabric/react-hooks';
 import { Expression } from 'adaptive-expressions';
-import { FieldLabel } from '../FieldLabel';
 import { JsonEditor } from '@bfc/code-editor';
 import { Modal } from 'office-ui-fabric-react/lib/components/Modal/Modal';
 import { getTheme, IconButton } from 'office-ui-fabric-react';
+
+import { FieldLabel } from '../FieldLabel';
 
 export const borderStyles = (transparentBorder: boolean, error: boolean) =>
   transparentBorder
@@ -47,7 +48,24 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
     focused,
     cursorPosition,
   } = props;
+  const defaultJson = `{
+    "turn": {
+        "activity":{
+            "text":"hello",
+            "speak":"hello",
+            "Recipient":{
+                "id":"my id"
+            }
+        }
+    },
+    "user":{
+        "name":"Jack"
+    }
+}`;
 
+  if (sessionStorage.getItem('properties') == null) {
+    sessionStorage.setItem('properties', defaultJson);
+  }
   const textFieldRef = React.createRef<ITextField>();
   const [isModalOpen, { setTrue: openPanel, setFalse: hideModal }] = useBoolean(false);
   const [expressionResult, setExpressionResult] = useState<string>('');
@@ -121,7 +139,7 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
           required={required}
         />
       </div>
-      <div onMouseOver={() => setHidePropertiesButton(false)} onMouseLeave={() => setHidePropertiesButton(true)}>
+      <div onMouseLeave={() => setHidePropertiesButton(true)} onMouseOver={() => setHidePropertiesButton(false)}>
         <TextField
           ariaLabel={label || formatMessage('string field')}
           autoComplete="off"
@@ -143,22 +161,24 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
           onFocus={handleFocus}
           onKeyDown={props.onKeyDown}
           onKeyUp={props.onKeyUp}
-          iconProps={{ iconName: 'Play', style: { pointerEvents: 'auto', cursor: 'pointer' }, onClick: evaluate }}
         />
-        {!hidePropertiesButton && (
-          <div>
-            <div style={{ float: 'left', color: 'grey', paddingLeft: '20px' }}>{expressionResult}</div>
-            <div style={{ float: 'right' }}>
-              <a href="javascript:;" onClick={openPanel}>
-                Configurations
-              </a>
-            </div>
+        <div style={{ display: hidePropertiesButton ? 'none' : 'flex', flex: 1, justifyContent: 'space-between' }}>
+          <div style={{ color: 'grey' }}>
+            <IconButton iconProps={{ iconName: 'Play' }} onClick={evaluate} />
+            {expressionResult}
           </div>
-        )}
+          <div style={{ marginRight: 0 }}>
+            <a href="javascript:;" onClick={openPanel}>
+              Properties
+            </a>
+          </div>
+        </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onDismiss={hideModal} isBlocking={true}>
+      <Modal isBlocking isOpen={isModalOpen} onDismiss={hideModal}>
         <IconButton
+          ariaLabel="Close popup modal"
+          iconProps={{ iconName: 'Cancel' }}
           styles={{
             root: {
               color: theme.palette.neutralPrimary,
@@ -169,16 +189,18 @@ export const StringField: React.FC<FieldProps<string>> = function StringField(pr
               color: theme.palette.neutralDark,
             },
           }}
-          iconProps={{ iconName: 'Cancel' }}
-          ariaLabel="Close popup modal"
           onClick={hideModal}
         />
         <JsonEditor
-          onError={() => {}}
-          width="800px"
           height="800px"
           value={JSON.parse(sessionStorage.getItem('properties') ?? '{}')}
-          onChange={(newValue) => sessionStorage.setItem('properties', JSON.parse(newValue) ?? '{}')}
+          width="800px"
+          onChange={(newValue) => {
+            try {
+              sessionStorage.setItem('properties', JSON.stringify(newValue) ?? '{}');
+            } catch (error) {}
+          }}
+          onError={() => {}}
         />
       </Modal>
     </>

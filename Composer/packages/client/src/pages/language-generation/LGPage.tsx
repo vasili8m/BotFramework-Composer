@@ -13,14 +13,16 @@ import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
 import { Modal, Panel } from 'office-ui-fabric-react';
 import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
 import { lgUtil } from '@bfc/indexers';
+import { JsonEditor } from '@bfc/code-editor';
+import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
+
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { navigateTo } from '../../utils/navigation';
 import { Page } from '../../components/Page';
 import { lgFilesState, localeState, validateDialogsSelectorFamily } from '../../recoilModel';
 import TelemetryClient from '../../telemetry/TelemetryClient';
-import { JsonEditor } from '@bfc/code-editor';
+
 import TableView from './table-view';
-import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
 
 const CodeEditor = React.lazy(() => import('./code-editor'));
 
@@ -211,14 +213,16 @@ const LGPage: React.FC<RouteComponentProps<{
             onDismiss={dismissPanel}
           >
             <a href="javascript:;" onClick={showModal}>
-              Configurations
+              Properties
             </a>
             <Components.BasicWebChat />
           </Panel>
           <VirtualButton />
         </Components.Composer>
-        <Modal isOpen={isModalOpen} onDismiss={hideModal} isBlocking={true}>
+        <Modal isBlocking isOpen={isModalOpen} onDismiss={hideModal}>
           <IconButton
+            ariaLabel="Close popup modal"
+            iconProps={{ iconName: 'Cancel' }}
             styles={{
               root: {
                 color: theme.palette.neutralPrimary,
@@ -229,16 +233,18 @@ const LGPage: React.FC<RouteComponentProps<{
                 color: theme.palette.neutralDark,
               },
             }}
-            iconProps={{ iconName: 'Cancel' }}
-            ariaLabel="Close popup modal"
             onClick={hideModal}
           />
           <JsonEditor
-            onError={() => {}}
-            width="800px"
             height="800px"
             value={JSON.parse(sessionStorage.getItem('properties') ?? '{}')}
-            onChange={(newValue) => sessionStorage.setItem('properties', JSON.parse(newValue) ?? '{}')}
+            width="800px"
+            onChange={(newValue) => {
+              try {
+                sessionStorage.setItem('properties', JSON.stringify(newValue) ?? '{}');
+              } catch (error) {}
+            }}
+            onError={() => {}}
           />
         </Modal>
       </Suspense>
