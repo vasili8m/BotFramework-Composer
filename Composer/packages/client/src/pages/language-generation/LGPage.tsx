@@ -11,7 +11,13 @@ import { RouteComponentProps, Router } from '@reach/router';
 import { useRecoilValue } from 'recoil';
 import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
 import { Modal, Panel } from 'office-ui-fabric-react';
-import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
+import {
+  Components,
+  createAdaptiveCardsAttachmentMiddleware,
+  createDirectLine,
+  createStore,
+  hooks,
+} from 'botframework-webchat';
 import { lgUtil } from '@bfc/indexers';
 import { JsonEditor } from '@bfc/code-editor';
 import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
@@ -114,6 +120,7 @@ const LGPage: React.FC<RouteComponentProps<{
 
   const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
   const [isModalOpen, { setTrue: showModal, setFalse: hideModal }] = useBoolean(false);
+
   const VirtualButton = () => {
     const sendMessage = hooks.useSendMessage();
     React.useEffect(() => {
@@ -145,7 +152,7 @@ const LGPage: React.FC<RouteComponentProps<{
             }
           }
           openPanel();
-          sendMessage(`run ${e.data.templateName}`);
+          sendMessage(`Evaluate template: ${templateName}`);
         }
       },
       [sendMessage]
@@ -183,7 +190,7 @@ const LGPage: React.FC<RouteComponentProps<{
             bubbleNubOffset: 0,
             bubbleNubSize: 10,
             hideUploadButton: true,
-            rootHeight: 800,
+            rootHeight: 1000,
 
             bubbleFromUserBackground: '#3178c6',
             bubbleFromUserBorderColor: '#3178c6',
@@ -192,6 +199,7 @@ const LGPage: React.FC<RouteComponentProps<{
             bubbleFromUserNubOffset: 0,
             bubbleFromUserNubSize: 10,
             bubbleFromUserTextColor: 'White',
+            hideSendBox: true,
           }}
           userID={'default-user'}
         >
