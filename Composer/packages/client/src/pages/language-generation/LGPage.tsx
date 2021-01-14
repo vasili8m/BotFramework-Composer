@@ -11,13 +11,7 @@ import { RouteComponentProps, Router } from '@reach/router';
 import { useRecoilValue } from 'recoil';
 import { useBoolean } from '@uifabric/react-hooks/lib/useBoolean';
 import { Modal, Panel } from 'office-ui-fabric-react';
-import {
-  Components,
-  createAdaptiveCardsAttachmentMiddleware,
-  createDirectLine,
-  createStore,
-  hooks,
-} from 'botframework-webchat';
+import { Components, createDirectLine, createStore, hooks } from 'botframework-webchat';
 import { lgUtil } from '@bfc/indexers';
 import { JsonEditor } from '@bfc/code-editor';
 import { Activity, ActivityFactory, MessageFactory } from 'botbuilder-core';
@@ -109,6 +103,8 @@ const LGPage: React.FC<RouteComponentProps<{
     () =>
       createStore({}, () => (next: (arg0: { type: any }) => any) => (action: { type: any; payload: any }) => {
         if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY' && action?.payload?.activity?.from?.role === 'bot') {
+          console.log('receive:');
+          console.log(action.payload.activity);
           if (lgResult.current) {
             Object.assign(action.payload.activity, lgResult.current);
           }
@@ -145,6 +141,14 @@ const LGPage: React.FC<RouteComponentProps<{
               );
               const activity = ActivityFactory.fromObject(result);
               if (activity) {
+                if (!activity.text) {
+                  activity.text = undefined;
+                }
+
+                if (!activity.speak) {
+                  activity.speak = undefined;
+                }
+
                 lgResult.current = activity;
               }
             } catch (error) {
