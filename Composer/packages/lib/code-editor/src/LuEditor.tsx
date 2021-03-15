@@ -15,7 +15,7 @@ import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { defaultPlaceholder, LU_HELP } from './constants';
 import { LUOption } from './utils';
 
-const jsLuContextMenuClassName = 'js-lg-context-menu';
+const jsLuContextMenuClassName = 'js-lu-context-menu';
 export interface LULSPEditorProps extends BaseEditorProps {
   luOption?: LUOption;
   helpURL?: string;
@@ -231,7 +231,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
         onInit={onInit}
       />
       {calloutPosition && (
-        <Callout directionalHint={DirectionalHint.bottomRightEdge} isBeakVisible={false} target={calloutPosition}>
+        <Callout directionalHint={DirectionalHint.bottomLeftEdge} isBeakVisible={false} target={calloutPosition}>
           Custom Context Menu
         </Callout>
       )}
