@@ -4,6 +4,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { listen, MessageConnection } from 'vscode-ws-jsonrpc';
 import get from 'lodash/get';
+import { Callout, DirectionalHint } from 'office-ui-fabric-react/lib/Callout';
 import { MonacoServices, MonacoLanguageClient } from 'monaco-languageclient';
 import { EditorDidMount, Monaco } from '@monaco-editor/react';
 import formatMessage from 'format-message';
@@ -13,6 +14,7 @@ import { createUrl, createWebSocket, createLanguageClient, sendRequestWithRetry 
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { defaultPlaceholder, LU_HELP } from './constants';
 import { LUOption } from './utils';
+import { jsLgToolbarMenuClassName } from './lg/constants';
 
 export interface LULSPEditorProps extends BaseEditorProps {
   luOption?: LUOption;
@@ -69,6 +71,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
     lightbulb: {
       enabled: true,
     },
+    contextmenu: false,
     ...props.options,
   };
 
@@ -89,6 +92,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
   }
 
   const [editor, setEditor] = useState<any>();
+  const [calloutPosition, setCalloutPosition] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -146,6 +150,57 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
       sendRequestWithRetry(languageClient, 'initializeDocuments', { luOption, uri });
     }
   }, [editor]);
+
+  useEffect(() => {
+    const contextMenuListener = editor?.onContextMenu(({ event }) => {
+      event.browserEvent.preventDefault();
+      const selectedText = editor.getModel().getValueInRange(editor.getSelection());
+
+      if (selectedText) {
+        setCalloutPosition({ x: event.posx + 150, y: event.posy });
+      }
+    });
+
+    const didScrollChangeListener = editor?.onDidScrollChange(() => {
+      setCalloutPosition(null);
+    });
+
+    return () => {
+      contextMenuListener?.dispose();
+      didScrollChangeListener?.dispose();
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    const keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setCalloutPosition(null);
+      }
+    };
+
+    const focusHandler = (e: FocusEvent) => {
+      if (
+        !e
+          .composedPath()
+          .filter((n) => n instanceof Element)
+          .map((n) => (n as Element).className)
+          .some((c) => c.indexOf(jsLgToolbarMenuClassName) !== -1)
+      ) {
+        setCalloutPosition(null);
+      }
+    };
+
+    document.addEventListener('keydown', keydownHandler);
+    document.addEventListener('click', focusHandler);
+    document.addEventListener('focusin', focusHandler);
+
+    return () => {
+      document.removeEventListener('keydown', keydownHandler);
+      document.removeEventListener('click', focusHandler);
+      document.removeEventListener('focusin', focusHandler);
+    };
+  }, []);
+
   const onInit: OnInit = (monaco) => {
     registerLULanguage(monaco);
     monacoRef.current = monaco;
@@ -163,17 +218,24 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
   };
 
   return (
-    <BaseEditor
-      helpURL={LU_HELP}
-      id={editorId}
-      placeholder={placeholder}
-      {...restProps}
-      editorDidMount={editorDidMount}
-      language="lu"
-      options={options}
-      theme="lu"
-      onInit={onInit}
-    />
+    <div>
+      <BaseEditor
+        helpURL={LU_HELP}
+        id={editorId}
+        placeholder={placeholder}
+        {...restProps}
+        editorDidMount={editorDidMount}
+        language="lu"
+        options={options}
+        theme="lu"
+        onInit={onInit}
+      />
+      {calloutPosition && (
+        <Callout directionalHint={DirectionalHint.bottomRightEdge} isBeakVisible={false} target={calloutPosition}>
+          Custom Context Menu
+        </Callout>
+      )}
+    </div>
   );
 };
 
