@@ -14,8 +14,8 @@ import { createUrl, createWebSocket, createLanguageClient, sendRequestWithRetry 
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { defaultPlaceholder, LU_HELP } from './constants';
 import { LUOption } from './utils';
-import { jsLgToolbarMenuClassName } from './lg/constants';
 
+const jsLuContextMenuClassName = 'js-lg-context-menu';
 export interface LULSPEditorProps extends BaseEditorProps {
   luOption?: LUOption;
   helpURL?: string;
@@ -157,7 +157,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
       const selectedText = editor.getModel().getValueInRange(editor.getSelection());
 
       if (selectedText) {
-        setCalloutPosition({ x: event.posx + 150, y: event.posy });
+        setCalloutPosition({ x: event.posx, y: event.posy });
       }
     });
 
@@ -184,7 +184,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
           .composedPath()
           .filter((n) => n instanceof Element)
           .map((n) => (n as Element).className)
-          .some((c) => c.indexOf(jsLgToolbarMenuClassName) !== -1)
+          .some((c) => c.indexOf(jsLuContextMenuClassName) !== -1)
       ) {
         setCalloutPosition(null);
       }
