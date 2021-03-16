@@ -61,8 +61,10 @@ export const useLabelingMenuProps = (
   insertPrebuiltEntitiesDisabled: boolean,
   luFile?: LuFile,
   onItemClick?: IContextualMenuItem['onClick'],
-  filterPrebuiltEntities = false
+  filterPrebuiltEntities = false,
+  options: Partial<{ menuHeaderText: string }> = {}
 ): { menuProps: IContextualMenuProps; disabled: boolean } => {
+  const { menuHeaderText } = options;
   const entities = useLuEntities(luFile, filterPrebuiltEntities ? ['prebuilt'] : []);
   const [query, setQuery] = React.useState<string | undefined>();
   const debouncedQuery = useDebounce<string | undefined>(query, 300);
@@ -80,7 +82,7 @@ export const useLabelingMenuProps = (
       return (
         <Stack>
           <Stack styles={headerContainerStyles} verticalAlign="center">
-            <Header>{formatMessage('Insert defined entity')}</Header>
+            <Header>{menuHeaderText || formatMessage('Insert defined entity')}</Header>
           </Stack>
           <SearchBox
             disableAnimation
@@ -93,7 +95,7 @@ export const useLabelingMenuProps = (
         </Stack>
       );
     },
-    [onSearchAbort, onSearchQueryChange]
+    [menuHeaderText, onSearchAbort, onSearchQueryChange]
   );
 
   const items = React.useMemo<IContextualMenuItem[]>(() => {
