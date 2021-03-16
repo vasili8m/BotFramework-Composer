@@ -8,6 +8,7 @@ import { FluentTheme, NeutralColors } from '@uifabric/fluent-theme';
 import formatMessage from 'format-message';
 import get from 'lodash/get';
 import { MonacoLanguageClient, MonacoServices } from 'monaco-languageclient';
+import { Callout, DirectionalHint } from 'office-ui-fabric-react/lib/Callout';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import { Link } from 'office-ui-fabric-react/lib/Link';
 import { Stack } from 'office-ui-fabric-react/lib/Stack';
@@ -62,6 +63,7 @@ const LuSectionLink = withTooltip(
 );
 
 const sectionLinkTokens = { childrenGap: 4 };
+const jsLuContextMenuClassName = 'js-lu-context-menu';
 export interface LULSPEditorProps extends BaseEditorProps {
   luOption?: LUOption;
   helpURL?: string;
@@ -120,6 +122,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
     lightbulb: {
       enabled: true,
     },
+    contextmenu: false,
     ...props.options,
   };
 
@@ -145,6 +148,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
   const [editor, setEditor] = useState<any>();
   const entities = useLuEntities(luFile);
   const [insertPrebuiltEntitiesDisabled, setInsertPrebuiltEntitiesDisabled] = useState(false);
+  const [calloutPosition, setCalloutPosition] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -211,6 +215,56 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
     return () => selectionListenerDisposable.dispose();
   }, [editor]);
 
+  useEffect(() => {
+    const contextMenuListener = editor?.onContextMenu(({ event }) => {
+      event.browserEvent.preventDefault();
+      const selectedText = editor.getModel().getValueInRange(editor.getSelection());
+
+      if (selectedText) {
+        setCalloutPosition({ x: event.posx, y: event.posy });
+      }
+    });
+
+    const didScrollChangeListener = editor?.onDidScrollChange(() => {
+      setCalloutPosition(null);
+    });
+
+    return () => {
+      contextMenuListener?.dispose();
+      didScrollChangeListener?.dispose();
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    const keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setCalloutPosition(null);
+      }
+    };
+
+    const focusHandler = (e: FocusEvent) => {
+      if (
+        !e
+          .composedPath()
+          .filter((n) => n instanceof Element)
+          .map((n) => (n as Element).className)
+          .some((c) => c.indexOf(jsLuContextMenuClassName) !== -1)
+      ) {
+        setCalloutPosition(null);
+      }
+    };
+
+    document.addEventListener('keydown', keydownHandler);
+    document.addEventListener('click', focusHandler);
+    document.addEventListener('focusin', focusHandler);
+
+    return () => {
+      document.removeEventListener('keydown', keydownHandler);
+      document.removeEventListener('click', focusHandler);
+      document.removeEventListener('focusin', focusHandler);
+    };
+  }, []);
+
   const onInit: OnInit = (monaco) => {
     registerLULanguage(monaco);
     monacoRef.current = monaco;
@@ -261,35 +315,43 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
   }, [onNavigateToLuPage, luOption]);
 
   return (
-    <Stack verticalFill>
-      {!toolbarHidden && (
-        <LuEditorToolbar
-          insertPrebuiltEntitiesDisabled={insertPrebuiltEntitiesDisabled}
-          luFile={luFile}
-          onDefineEntity={createEntity}
-          onInsertEntity={insertEntity}
+    <>
+      <Stack verticalFill>
+        {!toolbarHidden && (
+          <LuEditorToolbar
+            insertPrebuiltEntitiesDisabled={insertPrebuiltEntitiesDisabled}
+            luFile={luFile}
+            onDefineEntity={createEntity}
+            onInsertEntity={insertEntity}
+          />
+        )}
+
+        <BaseEditor
+          helpURL={LU_HELP}
+          id={editorId}
+          placeholder={placeholder}
+          {...restProps}
+          editorDidMount={editorDidMount}
+          language="lu"
+          options={options}
+          theme="lu"
+          onInit={onInit}
         />
+        {onNavigateToLuPage && luOption && (
+          <Stack horizontal tokens={sectionLinkTokens} verticalAlign="center">
+            <Text styles={grayTextStyle}>{formatMessage('Intent name: ')}</Text>
+            <LuSectionLink as="button" styles={linkStyles} onClick={navigateToLuPage}>
+              #{luOption.sectionId}
+            </LuSectionLink>
+          </Stack>
+        )}
+      </Stack>
+      {calloutPosition && (
+        <Callout directionalHint={DirectionalHint.bottomLeftEdge} isBeakVisible={false} target={calloutPosition}>
+          Custom Context Menu
+        </Callout>
       )}
-      <BaseEditor
-        helpURL={LU_HELP}
-        id={editorId}
-        placeholder={placeholder}
-        {...restProps}
-        editorDidMount={editorDidMount}
-        language="lu"
-        options={options}
-        theme="lu"
-        onInit={onInit}
-      />
-      {onNavigateToLuPage && luOption && (
-        <Stack horizontal tokens={sectionLinkTokens} verticalAlign="center">
-          <Text styles={grayTextStyle}>{formatMessage('Intent name: ')}</Text>
-          <LuSectionLink as="button" styles={linkStyles} onClick={navigateToLuPage}>
-            #{luOption.sectionId}
-          </LuSectionLink>
-        </Stack>
-      )}
-    </Stack>
+    </>
   );
 };
 
