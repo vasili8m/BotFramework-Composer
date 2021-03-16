@@ -60,6 +60,8 @@ const LgTemplateLink = withTooltip(
   Link
 );
 
+const templateLinkTokens = { childrenGap: 4 };
+
 const LgEditorToolbar = styled(DefaultLgEditorToolbar)({
   border: `1px solid ${NeutralColors.gray120}`,
   borderBottom: 'none',
@@ -170,8 +172,8 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
   );
 
   const navigateToLgPage = React.useCallback(() => {
-    onNavigateToLgPage?.(lgOption?.fileId ?? 'common');
-  }, [onNavigateToLgPage, lgOption?.fileId]);
+    onNavigateToLgPage?.(lgOption?.fileId ?? 'common', lgOption?.templateId);
+  }, [onNavigateToLgPage, lgOption]);
 
   return (
     <Stack verticalFill>
@@ -194,7 +196,7 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
         onInit={onInit}
       />
       {onNavigateToLgPage && lgOption && (
-        <Stack horizontal verticalAlign="center">
+        <Stack horizontal tokens={templateLinkTokens} verticalAlign="center">
           <Text styles={grayTextStyle}>{formatMessage('Template name: ')}</Text>
           <LgTemplateLink as="button" styles={linkStyles} onClick={navigateToLgPage}>
             #{lgOption.templateId}()

@@ -1,22 +1,71 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import React, { useRef, useState, useEffect } from 'react';
-import { listen, MessageConnection } from 'vscode-ws-jsonrpc';
-import get from 'lodash/get';
-import { MonacoServices, MonacoLanguageClient } from 'monaco-languageclient';
+import { LuFile } from '@botframework-composer/types';
+import styled from '@emotion/styled';
 import { EditorDidMount, Monaco } from '@monaco-editor/react';
+import { FluentTheme, NeutralColors } from '@uifabric/fluent-theme';
 import formatMessage from 'format-message';
+import get from 'lodash/get';
+import { MonacoLanguageClient, MonacoServices } from 'monaco-languageclient';
+import { Icon } from 'office-ui-fabric-react/lib/Icon';
+import { Link } from 'office-ui-fabric-react/lib/Link';
+import { Stack } from 'office-ui-fabric-react/lib/Stack';
+import { Text } from 'office-ui-fabric-react/lib/Text';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { listen, MessageConnection } from 'vscode-ws-jsonrpc';
 
-import { registerLULanguage } from './languages';
-import { createUrl, createWebSocket, createLanguageClient, sendRequestWithRetry } from './utils/lspUtil';
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { defaultPlaceholder, LU_HELP } from './constants';
+import { registerLULanguage } from './languages';
+import { defaultMlEntityName } from './lu/constants';
+import { useLuEntities } from './lu/hooks/useLuEntities';
+import { LuEditorToolbar as DefaultLuEditorToolbar } from './lu/LuEditorToolbar';
+import { ToolbarLuEntityType } from './lu/types';
 import { LUOption } from './utils';
+import { createLanguageClient, createUrl, createWebSocket, sendRequestWithRetry } from './utils/lspUtil';
+import { computeDefineLuEntityEdits, computeInsertLuEntityEdits } from './utils/luUtils';
+import { withTooltip } from './utils/withTooltip';
 
+const LuEditorToolbar = styled(DefaultLuEditorToolbar)({
+  border: `1px solid ${NeutralColors.gray120}`,
+  borderBottom: 'none',
+});
+
+const linkStyles = {
+  root: {
+    fontSize: FluentTheme.fonts.small.fontSize,
+    ':hover': { textDecoration: 'none' },
+    ':active': { textDecoration: 'none' },
+  },
+};
+
+const botIconStyles = { root: { padding: '0 4px', fontSize: FluentTheme.fonts.small.fontSize } };
+const grayTextStyle = { root: { color: NeutralColors.gray80, fontSize: FluentTheme.fonts.small.fontSize } };
+
+const LuSectionLink = withTooltip(
+  {
+    content: (
+      <Text variant="small">
+        {formatMessage.rich('Edit this intent in<a>User Input view</a>', {
+          a: ({ children }) => (
+            <Text key="pageLink" variant="small">
+              <Icon iconName="People" styles={botIconStyles} />
+              {children}
+            </Text>
+          ),
+        })}
+      </Text>
+    ),
+  },
+  Link
+);
+
+const sectionLinkTokens = { childrenGap: 4 };
 export interface LULSPEditorProps extends BaseEditorProps {
   luOption?: LUOption;
   helpURL?: string;
+  luFile?: LuFile;
   languageServer?:
     | {
         host?: string;
@@ -25,6 +74,8 @@ export interface LULSPEditorProps extends BaseEditorProps {
         path: string;
       }
     | string;
+  toolbarHidden?: boolean;
+  onNavigateToLuPage?: (luFileId: string, luSectionId?: string) => void;
 }
 
 const defaultLUServer = {
@@ -43,7 +94,7 @@ type ServerEdit = {
 };
 
 /*
-convert the edits results from the server to an exectable object in manoco editor
+convert the edits results from the server to an executable object in monaco editor
 */
 function convertEdit(serverEdit: ServerEdit) {
   return {
@@ -73,7 +124,10 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
   };
 
   const {
+    toolbarHidden,
+    onNavigateToLuPage,
     luOption,
+    luFile,
     languageServer,
     onInit: onInitProp,
     placeholder = defaultPlaceholder,
@@ -89,9 +143,17 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
   }
 
   const [editor, setEditor] = useState<any>();
+  const entities = useLuEntities(luFile);
+  const [insertPrebuiltEntitiesDisabled, setInsertPrebuiltEntitiesDisabled] = useState(false);
 
   useEffect(() => {
     if (!editor) return;
+
+    const selectionListenerDisposable = editor.onDidChangeCursorSelection((e) => {
+      setInsertPrebuiltEntitiesDisabled(
+        e.selection.startLineNumber !== e.selection.endLineNumber || e.selection.startColumn !== e.selection.endColumn
+      );
+    });
 
     if (!window.monacoServiceInstance) {
       window.monacoServiceInstance = MonacoServices.install(editor as any);
@@ -145,7 +207,10 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
       }
       sendRequestWithRetry(languageClient, 'initializeDocuments', { luOption, uri });
     }
+
+    return () => selectionListenerDisposable.dispose();
   }, [editor]);
+
   const onInit: OnInit = (monaco) => {
     registerLULanguage(monaco);
     monacoRef.current = monaco;
@@ -162,18 +227,69 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
     }
   };
 
+  const createEntity = useCallback(
+    (entityType: ToolbarLuEntityType, entityName: string = defaultMlEntityName) => {
+      if (editor) {
+        const luEdits = computeDefineLuEntityEdits(entityType, entityName, editor, entities);
+        if (luEdits?.edits?.length) {
+          editor.executeEdits('toolbarMenu', luEdits.edits);
+          if (luEdits.selection) {
+            editor.setSelection(luEdits.selection);
+          }
+          editor.focus();
+        }
+      }
+    },
+    [editor, entities]
+  );
+
+  const insertEntity = useCallback(
+    (entityName: string) => {
+      if (editor) {
+        const edits = computeInsertLuEntityEdits(entityName, editor);
+        if (edits) {
+          editor.executeEdits('toolbarMenu', edits);
+          editor.focus();
+        }
+      }
+    },
+    [editor]
+  );
+
+  const navigateToLuPage = React.useCallback(() => {
+    onNavigateToLuPage?.(luOption?.fileId ?? 'common', luOption?.sectionId);
+  }, [onNavigateToLuPage, luOption]);
+
   return (
-    <BaseEditor
-      helpURL={LU_HELP}
-      id={editorId}
-      placeholder={placeholder}
-      {...restProps}
-      editorDidMount={editorDidMount}
-      language="lu"
-      options={options}
-      theme="lu"
-      onInit={onInit}
-    />
+    <Stack verticalFill>
+      {!toolbarHidden && (
+        <LuEditorToolbar
+          insertPrebuiltEntitiesDisabled={insertPrebuiltEntitiesDisabled}
+          luFile={luFile}
+          onDefineEntity={createEntity}
+          onInsertEntity={insertEntity}
+        />
+      )}
+      <BaseEditor
+        helpURL={LU_HELP}
+        id={editorId}
+        placeholder={placeholder}
+        {...restProps}
+        editorDidMount={editorDidMount}
+        language="lu"
+        options={options}
+        theme="lu"
+        onInit={onInit}
+      />
+      {onNavigateToLuPage && luOption && (
+        <Stack horizontal tokens={sectionLinkTokens} verticalAlign="center">
+          <Text styles={grayTextStyle}>{formatMessage('Intent name: ')}</Text>
+          <LuSectionLink as="button" styles={linkStyles} onClick={navigateToLuPage}>
+            #{luOption.sectionId}
+          </LuSectionLink>
+        </Stack>
+      )}
+    </Stack>
   );
 };
 
