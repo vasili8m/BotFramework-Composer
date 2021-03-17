@@ -3,4 +3,4 @@
 
 export const toolbarSupportedLuEntityTypes = ['ml', 'prebuilt'] as const;
 export type ToolbarLuEntityType = typeof toolbarSupportedLuEntityTypes[number];
-export type LuToolbarButtonKind = 'useEntity' | 'defineEntity';
+export type LuToolbarButtonKind = 'useEntity' | 'defineEntity' | 'tagEntity';

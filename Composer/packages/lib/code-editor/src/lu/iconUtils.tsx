@@ -13,5 +13,9 @@ export const getLuToolbarItemTextAndIcon = (kind: LuToolbarButtonKind): { iconNa
     case 'useEntity': {
       return { iconName: 'Tag', text: formatMessage('Insert entity') };
     }
+
+    case 'tagEntity': {
+      return { iconName: 'Tag', text: formatMessage('Tag entity') };
+    }
   }
 };

@@ -6,44 +6,56 @@ import formatMessage from 'format-message';
 import { ContextualMenu, DirectionalHint, IContextualMenuItem } from 'office-ui-fabric-react/lib/ContextualMenu';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useLabelingMenuProps } from '../lu/hooks/useLabelingMenuItems';
-import { computeInsertLuEntityEdits, isUtterance, selectionContainedInBrackets } from '../utils/luUtils';
+import { computeInsertLuEntityEdits, isSelectionWithinBrackets } from '../utils/luUtils';
 
+import { useLabelingMenuProps } from './hooks/useLabelingMenuItems';
 import { useMonacoSelectedTextDom } from './hooks/useMonacoSelectedTextDom';
 
 type Props = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   editor: any;
   luFile?: LuFile;
+  onMenuToggled?: (visible: boolean) => void;
 };
 
-const LuContextMenu: React.FC<Props> = ({ editor, luFile }) => {
-  const [contextMenuTarget, setContextMenuTarget] = useState<Element | null | undefined>(null);
+export const LuLabelingMenu = ({ editor, luFile, onMenuToggled }: Props) => {
+  const [menuTargetElm, setMenuTargetElm] = useState<HTMLElement | null>(null);
 
-  useMonacoSelectedTextDom(editor, (selectedDomElement, selectedText, lineContent, selection) => {
-    if (selectedText && isUtterance(lineContent) && !selectionContainedInBrackets(lineContent, selection)) {
-      setContextMenuTarget(selectedDomElement);
+  React.useEffect(() => {
+    onMenuToggled?.(!!menuTargetElm);
+  }, [menuTargetElm]);
+
+  useMonacoSelectedTextDom(editor, (data) => {
+    if (!data) {
+      setMenuTargetElm(null);
+      return;
+    }
+
+    const { selectedDomElement, lineContent, selection } = data;
+    if (!isSelectionWithinBrackets(lineContent, selection) && selectedDomElement) {
+      setMenuTargetElm(selectedDomElement);
     } else {
-      setContextMenuTarget(null);
+      setMenuTargetElm(null);
     }
   });
 
   useEffect(() => {
-    if (!editor) return;
+    let scrollDisposable: { dispose: () => void };
 
-    const didScrollChangeListener = editor.onDidScrollChange(() => {
-      setContextMenuTarget(null);
-    });
+    if (editor) {
+      scrollDisposable = editor.onDidScrollChange(() => {
+        setMenuTargetElm(null);
+      });
+    }
 
     return () => {
-      didScrollChangeListener?.dispose();
+      scrollDisposable?.dispose();
     };
   }, [editor]);
 
   useEffect(() => {
     const keydownHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setContextMenuTarget(null);
+        setMenuTargetElm(null);
       }
     };
     document.addEventListener('keydown', keydownHandler);
@@ -72,7 +84,7 @@ const LuContextMenu: React.FC<Props> = ({ editor, luFile }) => {
       if (entity) {
         insertEntity(entity.Name);
       }
-      setContextMenuTarget(null);
+      setMenuTargetElm(null);
     },
     [insertEntity]
   );
@@ -81,14 +93,12 @@ const LuContextMenu: React.FC<Props> = ({ editor, luFile }) => {
     menuHeaderText: formatMessage('Tag entity'),
   });
 
-  return contextMenuTarget ? (
+  return menuTargetElm ? (
     <ContextualMenu
       {...menuProps}
       directionalHint={DirectionalHint.bottomLeftEdge}
       hidden={false}
-      target={contextMenuTarget}
+      target={menuTargetElm}
     />
   ) : null;
 };
-
-export { LuContextMenu };

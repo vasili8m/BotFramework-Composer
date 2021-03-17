@@ -20,7 +20,7 @@ import { defaultPlaceholder, LU_HELP } from './constants';
 import { registerLULanguage } from './languages';
 import { defaultMlEntityName } from './lu/constants';
 import { useLuEntities } from './lu/hooks/useLuEntities';
-import { LuContextMenu } from './lu/LuContextMenu';
+import { LuLabelingMenu } from './lu/LuLabelingMenu';
 import { LuEditorToolbar as DefaultLuEditorToolbar } from './lu/LuEditorToolbar';
 import { ToolbarLuEntityType } from './lu/types';
 import { LUOption } from './utils';
@@ -147,14 +147,15 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
 
   const [editor, setEditor] = useState<any>();
   const entities = useLuEntities(luFile);
-  const [insertPrebuiltEntitiesDisabled, setInsertPrebuiltEntitiesDisabled] = useState(false);
+  const [editorHasSelection, setEditorHasSelection] = useState(false);
+  const [labelingMenuVisible, setLabelingMenuVisible] = useState(false);
   const editorDomRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!editor) return;
 
     const selectionListenerDisposable = editor.onDidChangeCursorSelection((e) => {
-      setInsertPrebuiltEntitiesDisabled(
+      setEditorHasSelection(
         e.selection.startLineNumber !== e.selection.endLineNumber || e.selection.startColumn !== e.selection.endColumn
       );
     });
@@ -267,12 +268,15 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
     onNavigateToLuPage?.(luOption?.fileId ?? 'common', luOption?.sectionId);
   }, [onNavigateToLuPage, luOption]);
 
+  const onLabelingMenuToggled = React.useCallback((visible: boolean) => setLabelingMenuVisible(visible), []);
+
   return (
     <>
       <Stack verticalFill>
         {!toolbarHidden && (
           <LuEditorToolbar
-            insertPrebuiltEntitiesDisabled={insertPrebuiltEntitiesDisabled}
+            insertPrebuiltEntitiesDisabled={editorHasSelection}
+            labelingMenuVisible={labelingMenuVisible}
             luFile={luFile}
             onDefineEntity={createEntity}
             onInsertEntity={insertEntity}
@@ -299,7 +303,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
           </Stack>
         )}
       </Stack>
-      <LuContextMenu editor={editor} luFile={luFile} />
+      <LuLabelingMenu editor={editor} luFile={luFile} onMenuToggled={onLabelingMenuToggled} />
     </>
   );
 };

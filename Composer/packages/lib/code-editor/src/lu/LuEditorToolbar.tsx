@@ -23,13 +23,21 @@ const commandBarStyles = {
 type Props = {
   className?: string;
   luFile?: LuFile;
+  labelingMenuVisible: boolean;
   insertPrebuiltEntitiesDisabled: boolean;
   onDefineEntity: (entityType: ToolbarLuEntityType, entityName?: string) => void;
   onInsertEntity: (entityName: string) => void;
 };
 
 export const LuEditorToolbar = React.memo((props: Props) => {
-  const { luFile, insertPrebuiltEntitiesDisabled, className, onDefineEntity, onInsertEntity } = props;
+  const {
+    luFile,
+    insertPrebuiltEntitiesDisabled,
+    labelingMenuVisible,
+    className,
+    onDefineEntity,
+    onInsertEntity,
+  } = props;
 
   const defineLuEntityItem: ICommandBarItemProps = React.useMemo(() => {
     return {
@@ -44,12 +52,13 @@ export const LuEditorToolbar = React.memo((props: Props) => {
       commandBarButtonAs: () => (
         <InsertEntityButton
           insertPrebuiltEntitiesDisabled={insertPrebuiltEntitiesDisabled}
+          labelingMenuVisible={labelingMenuVisible}
           luFile={luFile}
           onInsertEntity={onInsertEntity}
         />
       ),
     };
-  }, [insertPrebuiltEntitiesDisabled, onInsertEntity, luFile]);
+  }, [insertPrebuiltEntitiesDisabled, labelingMenuVisible, luFile, onInsertEntity]);
 
   const items = React.useMemo(() => [defineLuEntityItem, useLuEntityItem], [useLuEntityItem, defineLuEntityItem]);
 

@@ -175,12 +175,12 @@ export const computeInsertLuEntityEdits = (entityName: string, editor: any) => {
   }
 };
 
-export const isUtterance = (line?: string): boolean => {
+export const isLineUtterance = (line?: string): boolean => {
   return !!line && /^-.*$/.test(line);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const selectionContainedInBrackets = (lineContent?: string, selection?: any): boolean => {
+export const isSelectionWithinBrackets = (lineContent?: string, selection?: any): boolean => {
   if (!lineContent || !selection) {
     return false;
   }
