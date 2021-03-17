@@ -98,6 +98,7 @@ export const LuLabelingMenu = ({ editor, luFile, onMenuToggled }: Props) => {
       {...menuProps}
       directionalHint={DirectionalHint.bottomLeftEdge}
       hidden={false}
+      shouldFocusOnMount={false}
       target={menuTargetElm}
     />
   ) : null;
