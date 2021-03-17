@@ -30,8 +30,8 @@ export const LuLabelingMenu = ({ editor, luFile, onMenuToggled }: Props) => {
       return;
     }
 
-    const { selectedDomElement, lineContent, selection } = data;
-    if (!isSelectionWithinBrackets(lineContent, selection) && selectedDomElement) {
+    const { selectedDomElement, selectedText, lineContent, selection } = data;
+    if (selectedText.trim() && !isSelectionWithinBrackets(lineContent, selection, selectedText) && selectedDomElement) {
       setMenuTargetElm(selectedDomElement);
     } else {
       setMenuTargetElm(null);
