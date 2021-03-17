@@ -168,9 +168,47 @@ export const computeInsertLuEntityEdits = (entityName: string, editor: any) => {
               endColumn: position.column,
             },
       text: insertText,
-      forceMoveMarkers: false,
+      forceMoveMarkers: true,
     });
 
     return edits;
   }
+};
+
+export const isUtterance = (line?: string): boolean => {
+  return !!line && /^-.*$/.test(line);
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const selectionContainedInBrackets = (lineContent?: string, selection?: any): boolean => {
+  if (!lineContent || !selection) {
+    return false;
+  }
+
+  const { startColumn, endColumn } = selection;
+
+  const left = lineContent.slice(0, startColumn - 1);
+  const right = lineContent.slice(endColumn - 1);
+
+  const leftBrackets: string[] = [];
+
+  for (const char of left) {
+    if (char === '{') {
+      leftBrackets.push(char);
+    } else if (char === '}') {
+      leftBrackets.pop();
+    }
+  }
+
+  const rightBrackets: string[] = [];
+
+  for (const char of right) {
+    if (char === '}') {
+      rightBrackets.push(char);
+    } else if (char === '{') {
+      rightBrackets.pop();
+    }
+  }
+
+  return rightBrackets.length > 0 && leftBrackets.length > 0;
 };

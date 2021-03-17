@@ -5,17 +5,24 @@ import React from 'react';
 
 const selectedTextCSSSelector = '.selected-text';
 
-export const useMonacoSelectedTextDom = (editor: any, callback: (dom?: HTMLElement, selectedText?: string) => void) => {
+export const useMonacoSelectedTextDom = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  editor: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  callback: (dom?: HTMLElement, selectedText?: string, lineContent?: string, selection?: any) => void
+) => {
   React.useEffect(() => {
     let observer: MutationObserver;
     if (editor) {
       const domElement = editor.getDomNode().querySelector('.view-overlays');
       observer = new MutationObserver(() => {
-        const selectedText = editor.getModel().getValueInRange(editor.getSelection());
+        const selection = editor.getSelection();
+        const selectedText = editor.getModel().getValueInRange(selection);
+        const lineContent = editor.getModel().getLineContent(selection.positionLineNumber);
 
         if (selectedText) {
           const element = domElement.querySelector(selectedTextCSSSelector);
-          callback(element, selectedText);
+          callback(element, selectedText, lineContent, selection);
         } else {
           callback();
         }

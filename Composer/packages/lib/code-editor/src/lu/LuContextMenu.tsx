@@ -7,11 +7,12 @@ import { ContextualMenu, DirectionalHint, IContextualMenuItem } from 'office-ui-
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useLabelingMenuProps } from '../lu/hooks/useLabelingMenuItems';
-import { computeInsertLuEntityEdits } from '../utils/luUtils';
+import { computeInsertLuEntityEdits, isUtterance, selectionContainedInBrackets } from '../utils/luUtils';
 
 import { useMonacoSelectedTextDom } from './hooks/useMonacoSelectedTextDom';
 
 type Props = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   editor: any;
   luFile?: LuFile;
 };
@@ -19,8 +20,12 @@ type Props = {
 const LuContextMenu: React.FC<Props> = ({ editor, luFile }) => {
   const [contextMenuTarget, setContextMenuTarget] = useState<Element | null | undefined>(null);
 
-  useMonacoSelectedTextDom(editor, (selectedDomElement, selectedText) => {
-    setContextMenuTarget(selectedText ? selectedDomElement : null);
+  useMonacoSelectedTextDom(editor, (selectedDomElement, selectedText, lineContent, selection) => {
+    if (selectedText && isUtterance(lineContent) && !selectionContainedInBrackets(lineContent, selection)) {
+      setContextMenuTarget(selectedDomElement);
+    } else {
+      setContextMenuTarget(null);
+    }
   });
 
   useEffect(() => {
