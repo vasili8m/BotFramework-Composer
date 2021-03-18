@@ -3,15 +3,21 @@
 
 import { FluentTheme } from '@uifabric/fluent-theme';
 import formatMessage from 'format-message';
-import { ContextualMenuItemType, IContextualMenuItem } from 'office-ui-fabric-react/lib/ContextualMenu';
 import { CommandBarButton as DefaultCommandBarButton } from 'office-ui-fabric-react/lib/Button';
+import {
+  ContextualMenuItemType,
+  IContextualMenuItem,
+  IContextualMenuProps,
+} from 'office-ui-fabric-react/lib/ContextualMenu';
 import * as React from 'react';
 
+import { useNoSearchResultMenuItem } from '../hooks/useNoSearchResultMenuItem';
+import { useSearchableMenuListCallback } from '../hooks/useSearchableMenuListCallback';
 import { withTooltip } from '../utils/withTooltip';
 
 import { jsLuToolbarMenuClassName, prebuiltEntities } from './constants';
-import { ToolbarLuEntityType } from './types';
 import { getLuToolbarItemTextAndIcon } from './iconUtils';
+import { ToolbarLuEntityType } from './types';
 
 const fontSizeStyle = {
   fontSize: FluentTheme.fonts.small.fontSize,
@@ -38,6 +44,41 @@ export const DefineEntityButton = React.memo((props: Props) => {
   const { onDefineEntity } = props;
 
   const { iconName, text } = React.useMemo(() => getLuToolbarItemTextAndIcon('defineEntity'), []);
+  const { onRenderMenuList, query, setQuery } = useSearchableMenuListCallback(
+    formatMessage('Search prebuilt entities')
+  );
+  const noSearchResultsMenuItem = useNoSearchResultMenuItem(formatMessage('no prebuilt entities found'));
+
+  const filteredPrebuiltEntities = React.useMemo(() => {
+    const filteredItems = query
+      ? prebuiltEntities.filter((e) => e.toLowerCase().indexOf(query.toLowerCase()) !== -1)
+      : prebuiltEntities;
+
+    if (!filteredItems.length) {
+      return [noSearchResultsMenuItem];
+    }
+
+    return filteredItems.map<IContextualMenuItem>((prebuiltEntity) => ({
+      key: prebuiltEntity,
+      text: prebuiltEntity,
+      style: fontSizeStyle,
+      onClick: () => onDefineEntity('prebuilt', prebuiltEntity),
+    }));
+  }, [onDefineEntity, noSearchResultsMenuItem, query]);
+
+  const onDismiss = React.useCallback(() => {
+    setQuery('');
+  }, []);
+
+  const prebuiltSubMenuProps = React.useMemo<IContextualMenuProps>(
+    () => ({
+      calloutProps: { calloutMaxHeight: 216 },
+      items: filteredPrebuiltEntities,
+      onRenderMenuList,
+      onDismiss,
+    }),
+    [filteredPrebuiltEntities, onDismiss, onRenderMenuList]
+  );
 
   const menuItems = React.useMemo(() => {
     return [
@@ -50,15 +91,7 @@ export const DefineEntityButton = React.memo((props: Props) => {
         key: 'prebuiltEntity',
         text: formatMessage('Prebuilt entity'),
         style: fontSizeStyle,
-        subMenuProps: {
-          calloutProps: { calloutMaxHeight: 216 },
-          items: prebuiltEntities.map<IContextualMenuItem>((prebuiltEntity) => ({
-            key: prebuiltEntity,
-            text: prebuiltEntity,
-            style: fontSizeStyle,
-            onClick: () => onDefineEntity('prebuilt', prebuiltEntity),
-          })),
-        },
+        subMenuProps: prebuiltSubMenuProps,
       },
       {
         key: 'mlEntity',
@@ -67,7 +100,7 @@ export const DefineEntityButton = React.memo((props: Props) => {
         onClick: () => onDefineEntity('ml'),
       },
     ];
-  }, [onDefineEntity]);
+  }, [onDefineEntity, prebuiltSubMenuProps]);
 
   const menuProps = React.useMemo(() => {
     return {
