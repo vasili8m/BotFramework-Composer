@@ -249,6 +249,10 @@ export const StringArrayItem = (props: Props) => {
     [editorMode]
   );
 
+  const popExpandOptions = React.useMemo(() => ({ onEditorPopToggle, popExpandTitle: formatMessage('Attachment') }), [
+    onEditorPopToggle,
+  ]);
+
   return (
     <Root verticalAlign="center">
       {mode === 'edit' ? (
@@ -257,7 +261,6 @@ export const StringArrayItem = (props: Props) => {
         ) : (
           <LgCodeEditorContainer>
             <LgCodeEditor
-              allowPopExpand
               editorDidMount={onEditorDidMount}
               editorSettings={codeEditorSettings}
               height={150}
@@ -265,11 +268,10 @@ export const StringArrayItem = (props: Props) => {
               lgTemplates={lgTemplates}
               memoryVariables={memoryVariables}
               options={{ folding: false }}
-              popExpandTitle={formatMessage('Attachment')}
+              popExpandOptions={popExpandOptions}
               telemetryClient={telemetryClient}
               value={value}
               onChange={onLgChange}
-              onEditorPopToggle={onEditorPopToggle}
             />
           </LgCodeEditorContainer>
         )

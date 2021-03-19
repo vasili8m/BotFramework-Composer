@@ -97,8 +97,7 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
     lgTemplates,
     telemetryClient,
     onNavigateToLgPage,
-    allowPopExpand,
-    onEditorPopToggle,
+    popExpandOptions,
     ...restProps
   } = props;
 
@@ -196,10 +195,10 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
             lgTemplates={lgTemplates}
             properties={memoryVariables}
             onPopExpand={
-              allowPopExpand
+              popExpandOptions
                 ? () => {
                     setExpanded(true);
-                    onEditorPopToggle?.(true);
+                    popExpandOptions.onEditorPopToggle?.(true);
                   }
                 : undefined
             }
@@ -228,17 +227,16 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
       </Stack>
       {expanded && (
         <Dialog
-          dialogContentProps={{ title: props.popExpandTitle ?? formatMessage('Title') }}
+          dialogContentProps={{ title: popExpandOptions?.popExpandTitle }}
           hidden={false}
           modalProps={{ isBlocking: true, styles: { main: { maxWidth: 'calc(100% - 32px) !important' } } }}
           onDismiss={() => {
             setExpanded(false);
-            onEditorPopToggle?.(false);
+            popExpandOptions?.onEditorPopToggle?.(false);
           }}
         >
           <LgCodeEditor
-            {...omit(props, ['onNavigateToLgPage', 'allowPopExpand'])}
-            allowPopExpand={false}
+            {...omit(props, ['onNavigateToLgPage', 'popExpandOptions'])}
             height={400}
             width={800}
             onChange={onExpandedEditorChange}

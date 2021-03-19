@@ -249,6 +249,8 @@ const LgField: React.FC<FieldProps<string>> = (props) => {
     [onTemplateChange]
   );
 
+  const popExpandOptions = React.useMemo(() => ({ popExpandTitle: label || formatMessage('Bot response') }), []);
+
   return (
     <React.Fragment>
       <Stack horizontal horizontalAlign="space-between" styles={{ root: { marginBottom: 4 } }} verticalAlign="center">
@@ -279,7 +281,6 @@ const LgField: React.FC<FieldProps<string>> = (props) => {
         </TooltipHost>
       </Stack>
       <LgEditor
-        allowPopExpand
         hidePlaceholder
         diagnostics={diagnostics}
         editorSettings={userSettings.codeEditor}
@@ -291,7 +292,7 @@ const LgField: React.FC<FieldProps<string>> = (props) => {
         lgTemplates={availableLgTemplates}
         memoryVariables={memoryVariables}
         mode={editorMode}
-        popExpandTitle={label || formatMessage('Bot response')}
+        popExpandOptions={popExpandOptions}
         telemetryClient={shellApi.telemetryClient}
         value={template.body}
         onChange={onChange}
