@@ -68,10 +68,11 @@ export type LgEditorToolbarProps = {
   onSelectToolbarMenuItem: (itemText: string, itemType: ToolbarButtonPayload['kind']) => void;
   moreToolbarItems?: readonly ICommandBarItemProps[];
   className?: string;
+  onPopExpand?: () => void;
 };
 
 export const LgEditorToolbar = React.memo((props: LgEditorToolbarProps) => {
-  const { className, properties, lgTemplates, moreToolbarItems, onSelectToolbarMenuItem } = props;
+  const { className, properties, lgTemplates, moreToolbarItems, onSelectToolbarMenuItem, onPopExpand } = props;
 
   const { functionRefPayload, propertyRefPayload, templateRefPayload } = useLgEditorToolbarItems(
     lgTemplates ?? [],
@@ -154,5 +155,32 @@ export const LgEditorToolbar = React.memo((props: LgEditorToolbarProps) => {
     [fixedItems, moreItems]
   );
 
-  return <CommandBar className={className} items={items} styles={commandBarStyles} onReduceData={() => undefined} />;
+  const farItems = React.useMemo<ICommandBarItemProps[]>(
+    () =>
+      onPopExpand
+        ? [
+            {
+              key: 'popExpandButton',
+              buttonStyles: moreButtonStyles,
+              className: jsLgToolbarMenuClassName,
+              iconProps: { iconName: 'MiniExpand' },
+              onClick: (e) => {
+                console.log(e?.target);
+                onPopExpand();
+              },
+            },
+          ]
+        : [],
+    [onPopExpand]
+  );
+
+  return (
+    <CommandBar
+      className={className}
+      farItems={farItems}
+      items={items}
+      styles={commandBarStyles}
+      onReduceData={() => undefined}
+    />
+  );
 });

@@ -111,6 +111,7 @@ type Props = {
   onChange?: (event: React.FormEvent<HTMLTextAreaElement | HTMLInputElement>, value?: string) => void;
   onLgChange?: (value: string) => void;
   onShowCallout?: (target: HTMLTextAreaElement) => void;
+  onEditorPopToggle?: (expanded: boolean) => void;
 };
 
 type TextViewItemProps = Pick<
@@ -232,6 +233,7 @@ export const StringArrayItem = (props: Props) => {
     onShowCallout,
     onRemove,
     onFocus,
+    onEditorPopToggle,
     value,
     telemetryClient,
     codeEditorSettings,
@@ -255,6 +257,7 @@ export const StringArrayItem = (props: Props) => {
         ) : (
           <LgCodeEditorContainer>
             <LgCodeEditor
+              allowPopExpand
               editorDidMount={onEditorDidMount}
               editorSettings={codeEditorSettings}
               height={150}
@@ -262,9 +265,11 @@ export const StringArrayItem = (props: Props) => {
               lgTemplates={lgTemplates}
               memoryVariables={memoryVariables}
               options={{ folding: false }}
+              popExpandTitle={formatMessage('Attachment')}
               telemetryClient={telemetryClient}
               value={value}
               onChange={onLgChange}
+              onEditorPopToggle={onEditorPopToggle}
             />
           </LgCodeEditorContainer>
         )

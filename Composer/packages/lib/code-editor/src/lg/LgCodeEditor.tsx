@@ -10,9 +10,11 @@ import { MonacoLanguageClient, MonacoServices } from 'monaco-languageclient';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import { Link } from 'office-ui-fabric-react/lib/Link';
 import { Stack } from 'office-ui-fabric-react/lib/Stack';
+import { Dialog } from 'office-ui-fabric-react/lib/Dialog';
 import { Text } from 'office-ui-fabric-react/lib/Text';
 import React, { useEffect, useState } from 'react';
 import { listen, MessageConnection } from 'vscode-ws-jsonrpc';
+import omit from 'lodash/omit';
 
 import { BaseEditor, OnInit } from '../BaseEditor';
 import { LG_HELP } from '../constants';
@@ -95,6 +97,8 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
     lgTemplates,
     telemetryClient,
     onNavigateToLgPage,
+    allowPopExpand,
+    onEditorPopToggle,
     ...restProps
   } = props;
 
@@ -107,6 +111,7 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
   }
 
   const [editor, setEditor] = useState<any>();
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!editor) return;
@@ -175,34 +180,71 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
     onNavigateToLgPage?.(lgOption?.fileId ?? 'common', lgOption?.templateId);
   }, [onNavigateToLgPage, lgOption]);
 
+  const onExpandedEditorChange = React.useCallback(
+    (value: string) => {
+      editor?.getModel()?.setValue(value);
+      props.onChange?.(value);
+    },
+    [editor, props?.onChange]
+  );
+
   return (
-    <Stack verticalFill>
-      {!toolbarHidden && (
-        <LgEditorToolbar
-          lgTemplates={lgTemplates}
-          properties={memoryVariables}
-          onSelectToolbarMenuItem={selectToolbarMenuItem}
+    <>
+      <Stack verticalFill>
+        {!toolbarHidden && (
+          <LgEditorToolbar
+            lgTemplates={lgTemplates}
+            properties={memoryVariables}
+            onPopExpand={
+              allowPopExpand
+                ? () => {
+                    setExpanded(true);
+                    onEditorPopToggle?.(true);
+                  }
+                : undefined
+            }
+            onSelectToolbarMenuItem={selectToolbarMenuItem}
+          />
+        )}
+        <BaseEditor
+          helpURL={LG_HELP}
+          id={editorId}
+          placeholder={placeholder}
+          {...restProps}
+          editorDidMount={editorDidMount}
+          language="botbuilderlg"
+          options={options}
+          theme="lgtheme"
+          onInit={onInit}
         />
+        {onNavigateToLgPage && lgOption && (
+          <Stack horizontal tokens={templateLinkTokens} verticalAlign="center">
+            <Text styles={grayTextStyle}>{formatMessage('Template name: ')}</Text>
+            <LgTemplateLink as="button" styles={linkStyles} onClick={navigateToLgPage}>
+              #{lgOption.templateId}()
+            </LgTemplateLink>
+          </Stack>
+        )}
+      </Stack>
+      {expanded && (
+        <Dialog
+          dialogContentProps={{ title: props.popExpandTitle ?? formatMessage('Title') }}
+          hidden={false}
+          modalProps={{ isBlocking: true, styles: { main: { maxWidth: 'calc(100% - 32px) !important' } } }}
+          onDismiss={() => {
+            setExpanded(false);
+            onEditorPopToggle?.(false);
+          }}
+        >
+          <LgCodeEditor
+            {...omit(props, ['onNavigateToLgPage', 'allowPopExpand'])}
+            allowPopExpand={false}
+            height={400}
+            width={800}
+            onChange={onExpandedEditorChange}
+          />
+        </Dialog>
       )}
-      <BaseEditor
-        helpURL={LG_HELP}
-        id={editorId}
-        placeholder={placeholder}
-        {...restProps}
-        editorDidMount={editorDidMount}
-        language="botbuilderlg"
-        options={options}
-        theme="lgtheme"
-        onInit={onInit}
-      />
-      {onNavigateToLgPage && lgOption && (
-        <Stack horizontal tokens={templateLinkTokens} verticalAlign="center">
-          <Text styles={grayTextStyle}>{formatMessage('Template name: ')}</Text>
-          <LgTemplateLink as="button" styles={linkStyles} onClick={navigateToLgPage}>
-            #{lgOption.templateId}()
-          </LgTemplateLink>
-        </Stack>
-      )}
-    </Stack>
+    </>
   );
 };

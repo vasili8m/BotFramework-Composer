@@ -279,6 +279,7 @@ const LgField: React.FC<FieldProps<string>> = (props) => {
         </TooltipHost>
       </Stack>
       <LgEditor
+        allowPopExpand
         hidePlaceholder
         diagnostics={diagnostics}
         editorSettings={userSettings.codeEditor}
@@ -290,6 +291,7 @@ const LgField: React.FC<FieldProps<string>> = (props) => {
         lgTemplates={availableLgTemplates}
         memoryVariables={memoryVariables}
         mode={editorMode}
+        popExpandTitle={label || formatMessage('Bot response')}
         telemetryClient={shellApi.telemetryClient}
         value={template.body}
         onChange={onChange}
