@@ -40,6 +40,21 @@ const commandBarStyles = {
   },
 };
 
+const popExpandIconProps = {
+  iconName: 'MiniExpand',
+};
+
+const popExpandButtonStyles = {
+  root: {
+    fontSize: FluentTheme.fonts.small.fontSize,
+    height: menuHeight,
+    'i.ms-Button-icon, :hover i.ms-Button-icon, :active i.ms-Button-icon': {
+      color: FluentTheme.palette.black,
+      fontSize: FluentTheme.fonts.small.fontSize,
+    },
+  },
+};
+
 const join = (...strings: (string | undefined)[]) => strings.filter(Boolean).join(' ');
 
 const configureMenuProps = (props: IContextualMenuProps | undefined, className: string) => {
@@ -155,23 +170,24 @@ export const LgEditorToolbar = React.memo((props: LgEditorToolbarProps) => {
     [fixedItems, moreItems]
   );
 
+  const popExpand = React.useCallback(() => {
+    onPopExpand?.();
+  }, [onPopExpand]);
+
   const farItems = React.useMemo<ICommandBarItemProps[]>(
     () =>
       onPopExpand
         ? [
             {
               key: 'popExpandButton',
-              buttonStyles: moreButtonStyles,
+              buttonStyles: popExpandButtonStyles,
               className: jsLgToolbarMenuClassName,
-              iconProps: { iconName: 'MiniExpand' },
-              onClick: (e) => {
-                console.log(e?.target);
-                onPopExpand();
-              },
+              iconProps: popExpandIconProps,
+              onClick: popExpand,
             },
           ]
         : [],
-    [onPopExpand]
+    [popExpand]
   );
 
   return (
