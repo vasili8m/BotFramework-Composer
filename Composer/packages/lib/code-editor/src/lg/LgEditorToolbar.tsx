@@ -8,6 +8,7 @@ import { CommandBar, ICommandBarItemProps } from 'office-ui-fabric-react/lib/Com
 import { VerticalDivider } from 'office-ui-fabric-react/lib/Divider';
 import { IContextualMenuProps } from 'office-ui-fabric-react/lib/ContextualMenu';
 import * as React from 'react';
+import { createSvgIcon } from '@fluentui/react-icons';
 
 import { withTooltip } from '../utils/withTooltip';
 
@@ -15,6 +16,17 @@ import { jsLgToolbarMenuClassName } from './constants';
 import { useLgEditorToolbarItems } from './hooks/useLgEditorToolbarItems';
 import { ToolbarButtonMenu } from './ToolbarButtonMenu';
 import { ToolbarButtonPayload } from './types';
+
+const svgIconStyle = { fill: NeutralColors.black, margin: '0 4px', width: 16, height: 16 };
+
+const popExpandSvgIcon = (
+  <svg fill="none" height="16" viewBox="0 0 10 10" width="16" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M8.75 8.75V5.625H9.375V9.375H0.625V0.625H4.375V1.25H1.25V8.75H8.75ZM5.625 0.625H9.375V4.375H8.75V1.69434L5.21973 5.21973L4.78027 4.78027L8.30566 1.25H5.625V0.625Z"
+      fill="black"
+    />
+  </svg>
+);
 
 const menuHeight = 32;
 
@@ -37,21 +49,6 @@ const commandBarStyles = {
     height: menuHeight,
     padding: 0,
     fontSize: FluentTheme.fonts.small.fontSize,
-  },
-};
-
-const popExpandIconProps = {
-  iconName: 'MiniExpand',
-};
-
-const popExpandButtonStyles = {
-  root: {
-    fontSize: FluentTheme.fonts.small.fontSize,
-    height: menuHeight,
-    'i.ms-Button-icon, :hover i.ms-Button-icon, :active i.ms-Button-icon': {
-      color: FluentTheme.palette.black,
-      fontSize: FluentTheme.fonts.small.fontSize,
-    },
   },
 };
 
@@ -180,9 +177,13 @@ export const LgEditorToolbar = React.memo((props: LgEditorToolbarProps) => {
         ? [
             {
               key: 'popExpandButton',
-              buttonStyles: popExpandButtonStyles,
+              buttonStyles: moreButtonStyles,
               className: jsLgToolbarMenuClassName,
-              iconProps: popExpandIconProps,
+              onRenderIcon: () => {
+                let PopExpandIcon = createSvgIcon({ svg: () => popExpandSvgIcon, displayName: 'PopExpandIcon' });
+                PopExpandIcon = withTooltip({ content: formatMessage('Pop out editor') }, PopExpandIcon);
+                return <PopExpandIcon style={svgIconStyle} />;
+              },
               onClick: popExpand,
             },
           ]
