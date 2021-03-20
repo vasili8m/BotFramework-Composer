@@ -98,6 +98,7 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
     telemetryClient,
     onNavigateToLgPage,
     popExpandOptions,
+    onChange,
     ...restProps
   } = props;
 
@@ -180,11 +181,21 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
   }, [onNavigateToLgPage, lgOption]);
 
   const onExpandedEditorChange = React.useCallback(
-    (value: string) => {
-      editor?.getModel()?.setValue(value);
-      props.onChange?.(value);
+    (newValue: string) => {
+      editor?.getModel()?.setValue(newValue);
+      onChange(newValue);
     },
-    [editor, props?.onChange]
+    [editor, onChange]
+  );
+
+  const change = React.useCallback(
+    (newValue: string, isFlush?: boolean) => {
+      // Only invoke callback if it's user edits and not setValue call
+      if (!isFlush) {
+        onChange(newValue);
+      }
+    },
+    [onChange]
   );
 
   return (
@@ -209,6 +220,7 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
           helpURL={LG_HELP}
           id={editorId}
           placeholder={placeholder}
+          onChange={change}
           {...restProps}
           editorDidMount={editorDidMount}
           language="botbuilderlg"
@@ -229,7 +241,10 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
         <Dialog
           dialogContentProps={{ title: popExpandOptions?.popExpandTitle }}
           hidden={false}
-          modalProps={{ isBlocking: true, styles: { main: { maxWidth: 'calc(100% - 32px) !important' } } }}
+          modalProps={{
+            isBlocking: true,
+            styles: { main: { maxWidth: '840px !important', width: '840px !important' } },
+          }}
           onDismiss={() => {
             setExpanded(false);
             popExpandOptions?.onEditorPopToggle?.(false);
@@ -238,7 +253,6 @@ export const LgCodeEditor = (props: LgCodeEditorProps) => {
           <LgCodeEditor
             {...omit(props, ['onNavigateToLgPage', 'popExpandOptions'])}
             height={400}
-            width={800}
             onChange={onExpandedEditorChange}
           />
         </Dialog>
