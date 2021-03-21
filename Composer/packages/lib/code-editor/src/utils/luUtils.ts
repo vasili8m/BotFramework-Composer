@@ -200,7 +200,7 @@ export const isSelectionWithinBrackets = (lineContent?: string, selection?: any,
     if (lineContent[i] === '{' && (i === 0 || (i > 0 && lineContent[i - 1] !== '\\'))) {
       return true;
     } else if (lineContent[i] === '}' && (i === 0 || (i > 0 && lineContent[i - 1] !== '\\'))) {
-      return false;
+      break;
     }
   }
 
@@ -208,7 +208,7 @@ export const isSelectionWithinBrackets = (lineContent?: string, selection?: any,
     if (lineContent[j] === '}' && (j === 0 || (j > 0 && lineContent[j - 1] !== '\\'))) {
       return true;
     } else if (lineContent[j] === '{' && (j === 0 || (j > 0 && lineContent[j - 1] !== '\\'))) {
-      return false;
+      break;
     }
   }
 
