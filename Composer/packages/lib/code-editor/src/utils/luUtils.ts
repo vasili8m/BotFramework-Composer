@@ -186,6 +186,8 @@ export const isLineUtterance = (line?: string): boolean => {
   return !!line && /^-.*$/.test(line);
 };
 
+const brackets = ['{', '}'];
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isSelectionWithinBrackets = (lineContent?: string, selection?: any, selectedText?: string): boolean => {
   if (!lineContent || !selection || !selectedText) {
@@ -194,29 +196,26 @@ export const isSelectionWithinBrackets = (lineContent?: string, selection?: any,
 
   // if selectedText contains an open or close bracket that is not escaped, return true
   for (let i = 0; i < selectedText.length; i++) {
-    if (['{', '}'].includes(selectedText[i]) && selectedText[i - 1] !== '\\') {
+    if (brackets.includes(selectedText[i]) && (i === 0 || (i > 0 && selectedText[i - 1] !== '\\'))) {
       return true;
     }
   }
 
   const { startColumn, endColumn } = selection;
 
-  const left = lineContent.slice(0, startColumn - 1);
-  const right = lineContent.slice(endColumn - 1);
-
-  for (let i = left.length - 1; i > -1; i--) {
-    if (left[i] === '{' && left[i - 1] !== '\\') {
-      // if left contains open bracket, check right for close bracket
-      for (let j = 0; j < right.length; j++) {
-        if (right[j] === '}' && right[j - 1] !== '\\') {
-          return true;
-        } else if (right[j] === '{') {
-          return false;
-        }
-      }
+  for (let i = startColumn - 2; i > -1; i--) {
+    if (lineContent[i] === '{' && (i === 0 || (i > 0 && lineContent[i - 1] !== '\\'))) {
+      return true;
+    } else if (lineContent[i] === '}' && (i === 0 || (i > 0 && lineContent[i - 1] !== '\\'))) {
       break;
-    } else if (left[i] === '}') {
-      return false;
+    }
+  }
+
+  for (let j = endColumn - 1; j < lineContent.length; j++) {
+    if (lineContent[j] === '}' && (j === 0 || (j > 0 && lineContent[j - 1] !== '\\'))) {
+      return true;
+    } else if (lineContent[j] === '{' && (j === 0 || (j > 0 && lineContent[j - 1] !== '\\'))) {
+      break;
     }
   }
 
