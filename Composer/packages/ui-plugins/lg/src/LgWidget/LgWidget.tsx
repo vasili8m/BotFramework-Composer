@@ -54,7 +54,7 @@ const StructuredResponseRow = React.memo(
       <Stack horizontal tokens={rowTokens} verticalAlign="center">
         <GrayText variant="small">{keyText}</GrayText>
         <OneLinerText horizontal title={valueText} tokens={rootTokens}>
-          <Stack styles={{ root: { overflow: 'hidden', maxWidth: 'calc(100% - 24px)' } }}>
+          <Stack styles={{ root: { overflow: 'hidden', maxWidth: `calc(100% - ${moreCount ? '24px' : '0px'})` } }}>
             <Text variant="small">{valueText}</Text>
           </Stack>
           {moreCount && <MoreCountText variant="small">{`+${moreCount}`}</MoreCountText>}
