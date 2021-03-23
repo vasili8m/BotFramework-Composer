@@ -106,49 +106,56 @@ export const computeDefineLuEntityEdits = (
   entityName: string,
   editor: any,
   entities: readonly LuEntity[]
-): { edits: MonacoEdit[]; selection?: MonacoRange } | undefined => {
+): { edits: MonacoEdit[]; selection?: MonacoRange; scrollLine?: number } | undefined => {
   if (editor) {
-    const position: MonacoPosition = editor.getPosition() ?? { lineNumber: 1, column: 1 };
-    const selection: MonacoRange = editor.getSelection();
-    const textSelected =
-      selection.startLineNumber !== selection.endLineNumber || selection.startColumn !== selection.endColumn;
+    const lineCount = editor.getModel().getLineCount();
 
     const insertText = getLuText(
       entityType,
       entityName,
       entities.map((e) => e.Name)
     );
+
     const edits: MonacoEdit[] = [];
 
+    let lineNumber = lineCount + 1;
+
+    // Insert one line gap at the end of the file
     edits.push({
-      range:
-        textSelected && selection
-          ? {
-              startLineNumber: selection.startLineNumber,
-              startColumn: selection.startColumn,
-              endLineNumber: selection.endLineNumber,
-              endColumn: selection.endColumn,
-            }
-          : {
-              startLineNumber: position.lineNumber,
-              startColumn: position.column,
-              endLineNumber: position.lineNumber,
-              endColumn: position.column,
-            },
+      range: {
+        startLineNumber: lineNumber,
+        startColumn: 1,
+        endLineNumber: lineNumber,
+        endColumn: 1,
+      },
+      text: '\n\n',
+      forceMoveMarkers: true,
+    });
+
+    lineNumber += 1;
+
+    edits.push({
+      range: {
+        startLineNumber: lineNumber,
+        startColumn: 1,
+        endLineNumber: lineNumber,
+        endColumn: 1,
+      },
       text: insertText,
       forceMoveMarkers: true,
     });
 
     return {
       edits,
+      scrollLine: lineNumber,
       selection:
         entityType !== 'prebuilt'
           ? {
-              startLineNumber: position.lineNumber,
-              startColumn: position.column + insertText.length,
-              endLineNumber: position.lineNumber,
+              startLineNumber: lineNumber,
+              startColumn: 1 + insertText.length,
+              endLineNumber: lineNumber,
               // length of ' @ ' is 3
-              endColumn: position.column + entityType.length + 3,
+              endColumn: 1 + entityType.length + 3,
             }
           : undefined,
     };
@@ -250,14 +257,6 @@ export const isSelectionWithinBrackets = (lineContent?: string, selection?: any,
   const { startColumn, endColumn } = selection;
 
   return isSelectionWithinBracketsHelper(lineContent, startColumn, endColumn);
-};
-
-export const canDefineEntityBySelection = (editor: any, selection: MonacoRange): boolean => {
-  const lineContent = editor.getModel().getLineContent(selection.startLineNumber);
-  const selectedText = editor.getModel().getValueInRange(selection);
-
-  // if the entire line is selected or it's empty, user can define entity that replaces the selected text
-  return lineContent.trim() === selectedText.trim();
 };
 
 export const canInsertEntityBySelection = (editor: any, selection: MonacoRange): boolean => {

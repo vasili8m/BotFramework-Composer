@@ -6,7 +6,7 @@ import { FluentTheme } from '@uifabric/fluent-theme';
 import { CommandBar, ICommandBarItemProps } from 'office-ui-fabric-react/lib/CommandBar';
 import * as React from 'react';
 
-import { canDefineEntityBySelection, canInsertEntityBySelection, canTagEntityBySelection } from '../utils/luUtils';
+import { canInsertEntityBySelection, canTagEntityBySelection } from '../utils/luUtils';
 import { MonacoRange } from '../utils/monacoTypes';
 
 import { DefineEntityButton } from './DefineEntityButton';
@@ -35,7 +35,6 @@ type Props = {
 export const LuEditorToolbar = React.memo((props: Props) => {
   const { editor, luFile, labelingMenuVisible, className, onDefineEntity, onInsertEntity } = props;
 
-  const [defineEntityDisabled, setDefineEntityDisabled] = React.useState(true);
   const [insertEntityDisabled, setInsertEntityDisabled] = React.useState(true);
   const [tagEntityDisabled, setTagEntityDisabled] = React.useState(true);
 
@@ -44,7 +43,6 @@ export const LuEditorToolbar = React.memo((props: Props) => {
     if (editor) {
       listeners.push(
         editor.onDidChangeCursorSelection((e) => {
-          setDefineEntityDisabled(!canDefineEntityBySelection(editor, e.selection as MonacoRange));
           setInsertEntityDisabled(!canInsertEntityBySelection(editor, e.selection as MonacoRange));
           setTagEntityDisabled(!canTagEntityBySelection(editor, e.selection as MonacoRange));
         })
@@ -57,9 +55,9 @@ export const LuEditorToolbar = React.memo((props: Props) => {
   const defineLuEntityItem: ICommandBarItemProps = React.useMemo(() => {
     return {
       key: 'defineLuEntityItem',
-      commandBarButtonAs: () => <DefineEntityButton disabled={defineEntityDisabled} onDefineEntity={onDefineEntity} />,
+      commandBarButtonAs: () => <DefineEntityButton onDefineEntity={onDefineEntity} />,
     };
-  }, [onDefineEntity, defineEntityDisabled]);
+  }, [onDefineEntity]);
 
   const useLuEntityItem: ICommandBarItemProps = React.useMemo(() => {
     return {

@@ -49,12 +49,11 @@ const CommandBarButton = React.memo(
 );
 
 type Props = {
-  disabled: boolean;
   onDefineEntity: (entityType: ToolbarLuEntityType, entityName?: string) => void;
 };
 
 export const DefineEntityButton = React.memo((props: Props) => {
-  const { disabled, onDefineEntity } = props;
+  const { onDefineEntity } = props;
 
   const { iconName, text } = React.useMemo(() => getLuToolbarItemTextAndIcon('defineEntity'), []);
   const { onRenderMenuList, query, setQuery } = useSearchableMenuListCallback(
@@ -160,7 +159,6 @@ export const DefineEntityButton = React.memo((props: Props) => {
   return (
     <CommandBarButton
       className={jsLuToolbarMenuClassName}
-      disabled={disabled}
       iconProps={{ iconName }}
       menuProps={menuProps}
       styles={buttonStyles}

@@ -235,6 +235,11 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
           if (luEdits.selection) {
             editor.setSelection(luEdits.selection);
           }
+
+          if (luEdits?.scrollLine) {
+            editor.revealLineInCenter(luEdits?.scrollLine);
+          }
+
           editor.focus();
         }
       }
