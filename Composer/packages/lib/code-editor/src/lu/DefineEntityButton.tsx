@@ -24,6 +24,7 @@ import { jsLuToolbarMenuClassName, prebuiltEntities } from './constants';
 import { getLuToolbarItemTextAndIcon } from './iconUtils';
 import { ToolbarLuEntityType, toolbarSupportedLuEntityTypes } from './types';
 
+const allowedLuEntityTypes = ['prebuilt', 'ml'];
 const entityDefinitionLinkId = 'define-entity-menu-header-link';
 const entityDefinitionHelpUrl =
   'https://docs.microsoft.com/en-us/azure/bot-service/file-format/bot-builder-lu-file-format?view=azure-bot-service-4.0#entity';
@@ -127,13 +128,15 @@ export const DefineEntityButton = React.memo((props: Props) => {
         text: formatMessage('Define new entity'),
         onRenderContent: renderMenuItemHeader,
       },
-      ...toolbarSupportedLuEntityTypes.map((t) => ({
-        key: `${t}Entity`,
-        text: getEntityTypeDisplayName(t),
-        style: fontSizeStyle,
-        subMenuProps: t === 'prebuilt' ? prebuiltSubMenuProps : undefined,
-        onClick: t !== 'prebuilt' ? () => onDefineEntity(t) : undefined,
-      })),
+      ...toolbarSupportedLuEntityTypes
+        .filter((t) => allowedLuEntityTypes.includes(t))
+        .map((t) => ({
+          key: `${t}Entity`,
+          text: getEntityTypeDisplayName(t),
+          style: fontSizeStyle,
+          subMenuProps: t === 'prebuilt' ? prebuiltSubMenuProps : undefined,
+          onClick: t !== 'prebuilt' ? () => onDefineEntity(t) : undefined,
+        })),
     ];
   }, [onDefineEntity, renderMenuItemHeader, prebuiltSubMenuProps]);
 
