@@ -18,10 +18,10 @@ import { listen, MessageConnection } from 'vscode-ws-jsonrpc';
 import { BaseEditor, BaseEditorProps, OnInit } from './BaseEditor';
 import { defaultPlaceholder, LU_HELP } from './constants';
 import { registerLULanguage } from './languages';
-import { defaultMlEntityName } from './lu/constants';
+import { getDefaultMlEntityName } from './lu/constants';
 import { useLuEntities } from './lu/hooks/useLuEntities';
-import { LuLabelingMenu } from './lu/LuLabelingMenu';
 import { LuEditorToolbar as DefaultLuEditorToolbar } from './lu/LuEditorToolbar';
+import { LuLabelingMenu } from './lu/LuLabelingMenu';
 import { ToolbarLuEntityType } from './lu/types';
 import { LUOption } from './utils';
 import { createLanguageClient, createUrl, createWebSocket, sendRequestWithRetry } from './utils/lspUtil';
@@ -176,7 +176,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
 
           const m = monacoRef.current;
           if (m) {
-            // this is the correct way to combine keycodes in Monaco
+            // this is the correct way to combine key codes in Monaco
             // eslint-disable-next-line no-bitwise
             editor.addCommand(m.KeyMod.Shift | m.KeyCode.Enter, () => {
               const position = editor.getPosition();
@@ -235,8 +235,9 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
     }
   };
 
-  const createEntity = useCallback(
-    (entityType: ToolbarLuEntityType, entityName: string = defaultMlEntityName) => {
+  const defineEntity = useCallback(
+    (entityType: ToolbarLuEntityType, entityName?: string) => {
+      entityName = entityName || getDefaultMlEntityName(entityType);
       if (editor) {
         const luEdits = computeDefineLuEntityEdits(entityType, entityName, editor, entities);
         if (luEdits?.edits?.length) {
@@ -278,7 +279,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
             insertPrebuiltEntitiesDisabled={editorHasSelection}
             labelingMenuVisible={labelingMenuVisible}
             luFile={luFile}
-            onDefineEntity={createEntity}
+            onDefineEntity={defineEntity}
             onInsertEntity={insertEntity}
           />
         )}

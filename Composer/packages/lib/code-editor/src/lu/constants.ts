@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+import { ToolbarLuEntityType } from './types';
+
 export const jsLuToolbarMenuClassName = 'js-lu-toolbar-menu';
 
-export const defaultMlEntityName = 'myMLEntityName';
+export const getDefaultMlEntityName = (entityType: ToolbarLuEntityType) => `${entityType}EntityName`;
 
 export const prebuiltEntities = [
   'age',

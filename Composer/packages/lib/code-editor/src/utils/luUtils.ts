@@ -86,6 +86,12 @@ const getLuText = (entityType: ToolbarLuEntityType, entity: string, entities: re
       return `@ ml ${entityName}`;
     case 'prebuilt':
       return `@ prebuilt ${entityName}`;
+    case 'list':
+      return `@ list ${entityName}`;
+    case 'composite':
+      return `@ composite ${entityName}`;
+    case 'regex':
+      return `@ regex ${entityName}`;
   }
 };
 
@@ -130,12 +136,13 @@ export const computeDefineLuEntityEdits = (
     return {
       edits,
       selection:
-        entityType === 'ml'
+        entityType !== 'prebuilt'
           ? {
               startLineNumber: position.lineNumber,
-              startColumn: position.column + 5,
+              startColumn: position.column + insertText.length,
               endLineNumber: position.lineNumber,
-              endColumn: position.column + insertText.length,
+              // length of ' @ ' is 3
+              endColumn: position.column + entityType.length + 3,
             }
           : undefined,
     };
