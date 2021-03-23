@@ -49,14 +49,14 @@ const secondaryTextStyles = { root: { color: NeutralColors.gray90 } };
  * @returns Returns menuProps for labeling menu and if labeling is not possible and should be disabled.
  */
 export const useLabelingMenuProps = (
-  insertPrebuiltEntitiesDisabled: boolean,
+  nonMlEntityInsertionDisabled: boolean,
   luFile?: LuFile,
   onItemClick?: IContextualMenuItem['onClick'],
   filterPrebuiltEntities = false,
   options: Partial<{ menuHeaderText: string }> = {}
 ): { menuProps: IContextualMenuProps; disabled: boolean } => {
   const { menuHeaderText } = options;
-  const entities = useLuEntities(luFile, filterPrebuiltEntities ? ['prebuilt'] : []);
+  const entities = useLuEntities(luFile, filterPrebuiltEntities ? (e) => e.Type === 'ml' : undefined);
 
   const searchHeaderRenderer = React.useCallback(
     () => (
@@ -84,7 +84,7 @@ export const useLabelingMenuProps = (
 
     return filteredEntities.map<IContextualMenuItem>((e) => ({
       key: `${e.Type}-${e.Name}`,
-      disabled: insertPrebuiltEntitiesDisabled && (e.Type as ToolbarLuEntityType) === 'prebuilt',
+      disabled: nonMlEntityInsertionDisabled && (e.Type as ToolbarLuEntityType) !== 'ml',
       text: e.Name,
       secondaryText: getEntityTypeDisplayName(e.Type as ToolbarLuEntityType),
       data: e,
@@ -110,7 +110,7 @@ export const useLabelingMenuProps = (
   }, []);
 
   return {
-    disabled: !luFile || !entities.length,
+    disabled: !entities.length,
     menuProps: { items, onRenderMenuList, contextualMenuItemAs, onDismiss },
   };
 };

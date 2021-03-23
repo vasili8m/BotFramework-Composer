@@ -3,7 +3,7 @@
 
 import formatMessage from 'format-message';
 
-import { LuToolbarButtonKind, ToolbarLuEntityType } from './types';
+import { LuToolbarButtonKind } from './types';
 
 export const getLuToolbarItemTextAndIcon = (kind: LuToolbarButtonKind): { iconName: string; text: string } => {
   switch (kind) {
@@ -17,20 +17,5 @@ export const getLuToolbarItemTextAndIcon = (kind: LuToolbarButtonKind): { iconNa
     case 'tagEntity': {
       return { iconName: 'Highlight', text: formatMessage('Tag entity') };
     }
-  }
-};
-
-export const getLuTypeDisplayText = (entityType: ToolbarLuEntityType) => {
-  switch (entityType) {
-    case 'prebuilt':
-      return formatMessage('Prebuilt entity');
-    case 'ml':
-      return formatMessage('Machine learned entity');
-    case 'list':
-      return formatMessage('List entity');
-    case 'composite':
-      return formatMessage('Composite entity');
-    case 'regex':
-      return formatMessage('Regular expression entity');
   }
 };

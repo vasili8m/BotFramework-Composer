@@ -7,7 +7,7 @@ import uniqBy from 'lodash/uniqBy';
 
 import { ToolbarLuEntityType, toolbarSupportedLuEntityTypes } from '../types';
 
-export const useLuEntities = (luFile?: LuFile, filterEntityTypes: ToolbarLuEntityType[] = []) => {
+export const useLuEntities = (luFile?: LuFile, filterPredicate?: (e: LuEntity) => boolean) => {
   const [entities, setEntities] = React.useState<LuEntity[]>([]);
 
   React.useEffect(() => {
@@ -17,8 +17,8 @@ export const useLuEntities = (luFile?: LuFile, filterEntityTypes: ToolbarLuEntit
           toolbarSupportedLuEntityTypes.includes(e.Type as ToolbarLuEntityType)
         );
 
-        if (filterEntityTypes?.length) {
-          items = items.filter((e) => !filterEntityTypes?.includes(e.Type as ToolbarLuEntityType));
+        if (filterPredicate) {
+          items = items.filter(filterPredicate);
         }
 
         acc.push(...items);

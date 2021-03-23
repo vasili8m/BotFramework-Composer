@@ -10,10 +10,16 @@ import { MonacoEdit, MonacoPosition, MonacoRange } from './monacoTypes';
 
 export const getEntityTypeDisplayName = (entityType: ToolbarLuEntityType) => {
   switch (entityType) {
-    case 'ml':
-      return formatMessage('Machine learned');
     case 'prebuilt':
-      return formatMessage('Prebuilt');
+      return formatMessage('Prebuilt entity');
+    case 'ml':
+      return formatMessage('Machine learned entity');
+    case 'list':
+      return formatMessage('List entity');
+    case 'composite':
+      return formatMessage('Composite entity');
+    case 'regex':
+      return formatMessage('Regular expression entity');
   }
 };
 
@@ -188,21 +194,7 @@ export const isLineUtterance = (line?: string): boolean => {
 
 const brackets = ['{', '}'];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isSelectionWithinBrackets = (lineContent?: string, selection?: any, selectedText?: string): boolean => {
-  if (!lineContent || !selection || !selectedText) {
-    return false;
-  }
-
-  // if selectedText contains an open or close bracket that is not escaped, return true
-  for (let i = 0; i < selectedText.length; i++) {
-    if (brackets.includes(selectedText[i]) && (i === 0 || (i > 0 && selectedText[i - 1] !== '\\'))) {
-      return true;
-    }
-  }
-
-  const { startColumn, endColumn } = selection;
-
+const isSelectionWithinBracketsHelper = (lineContent: string, startColumn: number, endColumn: number) => {
   for (let i = startColumn - 2; i > -1; i--) {
     if (lineContent[i] === '{' && (i === 0 || (i > 0 && lineContent[i - 1] !== '\\'))) {
       return true;
@@ -220,4 +212,72 @@ export const isSelectionWithinBrackets = (lineContent?: string, selection?: any,
   }
 
   return false;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isPositionWithinBrackets = (lineContent?: string, position?: MonacoPosition): boolean => {
+  if (!lineContent || !position) {
+    return false;
+  }
+
+  const startColumn = position.column;
+  const endColumn = position.column;
+
+  // if position is open or close bracket that is not escaped, return true
+  if (
+    brackets.includes(lineContent[startColumn - 1]) &&
+    (startColumn === 0 || (startColumn > 0 && lineContent[startColumn - 2] !== '\\'))
+  ) {
+    return true;
+  }
+
+  return isSelectionWithinBracketsHelper(lineContent, startColumn, endColumn);
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isSelectionWithinBrackets = (lineContent?: string, selection?: any, selectedText?: string): boolean => {
+  if (!lineContent || !selection || !selectedText) {
+    return false;
+  }
+
+  // if selectedText contains an open or close bracket that is not escaped, return true
+  for (let i = 0; i < selectedText.length; i++) {
+    if (brackets.includes(selectedText[i]) && (i === 0 || (i > 0 && selectedText[i - 1] !== '\\'))) {
+      return true;
+    }
+  }
+
+  const { startColumn, endColumn } = selection;
+
+  return isSelectionWithinBracketsHelper(lineContent, startColumn, endColumn);
+};
+
+export const canDefineEntityBySelection = (editor: any, selection: MonacoRange): boolean => {
+  const lineContent = editor.getModel().getLineContent(selection.startLineNumber);
+  const selectedText = editor.getModel().getValueInRange(selection);
+
+  // if the entire line is selected or it's empty, user can define entity that replaces the selected text
+  return lineContent.trim() === selectedText.trim();
+};
+
+export const canInsertEntityBySelection = (editor: any, selection: MonacoRange): boolean => {
+  const lineContent = editor.getModel().getLineContent(selection.startLineNumber);
+  const selectedText = editor.getModel().getValueInRange(selection);
+
+  return (
+    isLineUtterance(lineContent) &&
+    (selectedText
+      ? !isSelectionWithinBrackets(lineContent, selection, selectedText)
+      : !isPositionWithinBrackets(lineContent, {
+          lineNumber: selection.startLineNumber,
+          column: selection.startColumn,
+        }))
+  );
+};
+
+export const canTagEntityBySelection = (editor: any, selection: MonacoRange): boolean => {
+  const lineContent = editor.getModel().getLineContent(selection.startLineNumber);
+  const selectedText = editor.getModel().getValueInRange(selection);
+
+  return isLineUtterance(lineContent) && !isSelectionWithinBrackets(lineContent, selection, selectedText);
 };

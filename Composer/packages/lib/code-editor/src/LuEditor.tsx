@@ -147,18 +147,12 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
 
   const [editor, setEditor] = useState<any>();
   const entities = useLuEntities(luFile);
-  const [editorHasSelection, setEditorHasSelection] = useState(false);
+
   const [labelingMenuVisible, setLabelingMenuVisible] = useState(false);
   const editorDomRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!editor) return;
-
-    const selectionListenerDisposable = editor.onDidChangeCursorSelection((e) => {
-      setEditorHasSelection(
-        e.selection.startLineNumber !== e.selection.endLineNumber || e.selection.startColumn !== e.selection.endColumn
-      );
-    });
 
     if (!window.monacoServiceInstance) {
       window.monacoServiceInstance = MonacoServices.install(editor as any);
@@ -212,10 +206,6 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
       }
       sendRequestWithRetry(languageClient, 'initializeDocuments', { luOption, uri });
     }
-
-    return () => {
-      selectionListenerDisposable?.dispose();
-    };
   }, [editor]);
 
   const onInit: OnInit = (monaco) => {
@@ -276,7 +266,7 @@ const LuEditor: React.FC<LULSPEditorProps> = (props) => {
       <Stack verticalFill>
         {!toolbarHidden && (
           <LuEditorToolbar
-            insertPrebuiltEntitiesDisabled={editorHasSelection}
+            editor={editor}
             labelingMenuVisible={labelingMenuVisible}
             luFile={luFile}
             onDefineEntity={defineEntity}

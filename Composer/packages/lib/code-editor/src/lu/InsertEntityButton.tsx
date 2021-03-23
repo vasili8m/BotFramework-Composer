@@ -12,7 +12,7 @@ import { withTooltip } from '../utils/withTooltip';
 
 import { jsLuToolbarMenuClassName } from './constants';
 import { useLabelingMenuProps } from './hooks/useLabelingMenuItems';
-import { getLuToolbarItemTextAndIcon } from './utils';
+import { getLuToolbarItemTextAndIcon } from './iconUtils';
 
 const fontSizeStyle = {
   fontSize: FluentTheme.fonts.small.fontSize,
@@ -30,17 +30,24 @@ const buttonStyles = {
 };
 
 type Props = {
-  luFile?: LuFile;
   onInsertEntity: (entityName: string) => void;
-  insertPrebuiltEntitiesDisabled: boolean;
   labelingMenuVisible: boolean;
+  insertEntityDisabled: boolean;
+  tagEntityDisabled: boolean;
+  luFile?: LuFile;
 };
 
 const getCommandBarButton = (tooltipContent: string) =>
   withTooltip({ content: tooltipContent }, DefaultCommandBarButton);
 
 export const InsertEntityButton = React.memo((props: Props) => {
-  const { luFile, insertPrebuiltEntitiesDisabled, labelingMenuVisible, onInsertEntity } = props;
+  const { luFile, labelingMenuVisible, tagEntityDisabled, insertEntityDisabled, onInsertEntity } = props;
+
+  const mode = React.useMemo(() => (labelingMenuVisible ? 'tag' : 'insert'), [labelingMenuVisible]);
+  const disabled = React.useMemo(
+    () => (mode === 'tag' && tagEntityDisabled) || (mode === 'insert' && insertEntityDisabled),
+    [mode, insertEntityDisabled, tagEntityDisabled]
+  );
 
   const itemClick = React.useCallback(
     (_, item?: IContextualMenuItem) => {
@@ -52,7 +59,7 @@ export const InsertEntityButton = React.memo((props: Props) => {
     [onInsertEntity]
   );
 
-  const { disabled, menuProps } = useLabelingMenuProps(insertPrebuiltEntitiesDisabled, luFile, itemClick, false, {
+  const { menuProps } = useLabelingMenuProps(labelingMenuVisible, luFile, itemClick, false, {
     menuHeaderText: labelingMenuVisible ? formatMessage('Tag entity') : undefined,
   });
 

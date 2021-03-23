@@ -18,9 +18,10 @@ import { ItemWithTooltip } from '../components/ItemWithTooltip';
 import { useNoSearchResultMenuItem } from '../hooks/useNoSearchResultMenuItem';
 import { useSearchableMenuListCallback } from '../hooks/useSearchableMenuListCallback';
 import { withTooltip } from '../utils/withTooltip';
+import { getEntityTypeDisplayName } from '../utils/luUtils';
 
 import { jsLuToolbarMenuClassName, prebuiltEntities } from './constants';
-import { getLuToolbarItemTextAndIcon, getLuTypeDisplayText } from './utils';
+import { getLuToolbarItemTextAndIcon } from './iconUtils';
 import { ToolbarLuEntityType, toolbarSupportedLuEntityTypes } from './types';
 
 const entityDefinitionLinkId = 'define-entity-menu-header-link';
@@ -47,11 +48,12 @@ const CommandBarButton = React.memo(
 );
 
 type Props = {
+  disabled: boolean;
   onDefineEntity: (entityType: ToolbarLuEntityType, entityName?: string) => void;
 };
 
 export const DefineEntityButton = React.memo((props: Props) => {
-  const { onDefineEntity } = props;
+  const { disabled, onDefineEntity } = props;
 
   const { iconName, text } = React.useMemo(() => getLuToolbarItemTextAndIcon('defineEntity'), []);
   const { onRenderMenuList, query, setQuery } = useSearchableMenuListCallback(
@@ -127,7 +129,7 @@ export const DefineEntityButton = React.memo((props: Props) => {
       },
       ...toolbarSupportedLuEntityTypes.map((t) => ({
         key: `${t}Entity`,
-        text: getLuTypeDisplayText(t),
+        text: getEntityTypeDisplayName(t),
         style: fontSizeStyle,
         subMenuProps: t === 'prebuilt' ? prebuiltSubMenuProps : undefined,
         onClick: t !== 'prebuilt' ? () => onDefineEntity(t) : undefined,
@@ -155,6 +157,7 @@ export const DefineEntityButton = React.memo((props: Props) => {
   return (
     <CommandBarButton
       className={jsLuToolbarMenuClassName}
+      disabled={disabled}
       iconProps={{ iconName }}
       menuProps={menuProps}
       styles={buttonStyles}
