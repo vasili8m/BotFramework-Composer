@@ -31,6 +31,7 @@ const getTelemetryContext = () => {
 let client;
 if (instrumentationKey) {
   log('Setting up App Insights');
+  log(`instrumentationKey: ${instrumentationKey}`);
   AppInsights.setup(instrumentationKey)
     // turn off extra instrumentation
     .setAutoCollectConsole(false)
@@ -106,9 +107,10 @@ const track = (events: TelemetryEvent[]) => {
   for (const { type, name, properties = {}, url } of events) {
     if (name) {
       try {
+        log(`log telemetry event: ${type}`);
         switch (type) {
           case TelemetryEventTypes.TrackEvent:
-            client?.trackEvent({ name, properties });
+            client?.trackEvent({ type, properties });
             break;
           case TelemetryEventTypes.PageView:
             client?.trackPageView({ name, url, properties });
