@@ -3,11 +3,13 @@
 
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormErrors, JSONSchema7, UIOptions } from '@bfc/extension-client';
 import ErrorBoundary from 'react-error-boundary';
 import formatMessage from 'format-message';
 import { FontSizes } from '@uifabric/fluent-theme';
+import $RefParser from '@apidevtools/json-schema-ref-parser';
+import cloneDeep from 'lodash/clonedeep';
 
 import AdaptiveFormContext from '../AdaptiveFormContext';
 
@@ -36,7 +38,29 @@ const schemaLoadErrorStyle = css`
 `;
 
 export const AdaptiveForm: React.FC<AdaptiveFormProps> = function AdaptiveForm(props) {
-  const { errors, focusedTab, formData, schema, uiOptions, onChange, onFocusedTab } = props;
+  const { errors, focusedTab, formData, schema: rawSchema, uiOptions, onChange, onFocusedTab } = props;
+  const [schema, setSchema] = useState<JSONSchema7 | undefined>();
+
+  useEffect(() => {
+    if (rawSchema) {
+      let cancelled = false;
+
+      $RefParser.dereference(cloneDeep(rawSchema), (err, resolved) => {
+        if (!cancelled) {
+          if (err) {
+            setSchema(rawSchema);
+          } else {
+            setSchema(resolved as JSONSchema7);
+          }
+        }
+      });
+
+      return () => {
+        // cancel schema update if schema prop has changed
+        cancelled = true;
+      };
+    }
+  }, [rawSchema]);
 
   if (!formData && !schema) {
     return (

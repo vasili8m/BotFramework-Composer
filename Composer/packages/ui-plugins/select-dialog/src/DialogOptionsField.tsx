@@ -9,11 +9,13 @@ import Stack from 'office-ui-fabric-react/lib/components/Stack/Stack';
 import { FluentTheme, NeutralColors } from '@uifabric/fluent-theme';
 import formatMessage from 'format-message';
 import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
-import Ajv, { AnySchemaObject } from 'ajv';
+import Ajv from 'ajv';
+import $RefParser from '@apidevtools/json-schema-ref-parser';
+import cloneDeep from 'lodash/clonedeep';
 
 const loadSchema = async (uri: string) => {
   const res = await fetch(uri);
-  return res.body as AnySchemaObject;
+  return res.json();
 };
 
 const ajv = new Ajv({
@@ -80,15 +82,25 @@ const DialogOptionsField: React.FC<FieldProps> = ({
 }) => {
   const { dialog, options } = value;
   const { dialogSchemas } = useShellApi();
-  const { content: schema }: { content?: JSONSchema7 } = React.useMemo(
-    () => dialogSchemas.find(({ id }) => id === dialog) || {},
-    [dialog, dialogSchemas]
-  );
+  const [schema, setSchema] = React.useState<JSONSchema7 | undefined>();
 
   const [selectedKey, setSelectedKey] = React.useState<string>();
   const [validationStatus, setValidationStatus] = React.useState<JSONValidationStatus>('validating');
 
   const mountRef = React.useRef(false);
+
+  React.useEffect(() => {
+    const { content } = dialogSchemas.find(({ id }) => id === dialog) || { content: {} };
+    if (content) {
+      $RefParser.dereference(cloneDeep(content), (err, resolved) => {
+        if (err) {
+          setSchema(content as JSONSchema7);
+        } else {
+          setSchema(resolved as JSONSchema7);
+        }
+      });
+    }
+  }, [dialog, dialogSchemas]);
 
   React.useEffect(() => {
     mountRef.current = true;
@@ -104,6 +116,7 @@ const DialogOptionsField: React.FC<FieldProps> = ({
             setSelectedKey(getSelectedKey(options, schema, true));
           }
         } catch (error) {
+          console.error(error);
           if (mountRef.current) {
             setValidationStatus('inValid');
             setSelectedKey(getSelectedKey(options, schema, false));
